@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>セノビックブラザーズ - SENOBIC BROTHERS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #1a1a2e;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #e94560;
+      text-shadow: 2px 2px 4px #000;
+      font-size: 28px;
+    }
+
+    #game-container {
+      position: relative;
+      border: 4px solid #0f3460;
+      box-shadow: 0 0 20px rgba(233, 69, 96, 0.4);
+      background-color: #000;
+    }
+
+    canvas {
+      display: block;
+      background: linear-gradient(to bottom, #16213e, #0f3460);
+    }
+
+    .controls-info {
+      margin-top: 15px;
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      background: rgba(15, 52, 96, 0.8);
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+
+    .player-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .player-controls span {
+      font-weight: bold;
+      color: #e94560;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔥 セノビックブラザーズ 🔥</h1>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+  </div>
+
+  <div class="controls-info">
+    <div class="player-controls">
+      <span>1P (左) 操作:</span>
+      <div>移動: [A]左 [D]右 / ジャンプ: [W]</div>
+      <div>攻撃: [F] パンチ / [G] キック</div>
+    </div>
+    <div class="player-controls">
+      <span>2P (右) 操作 (CPU可):</span>
+      <div>移動: [←]左 [→]右 / ジャンプ: [↑]</div>
+      <div>攻撃: [K] パンチ / [L] キック</div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // ゲーム状態 (SELECTION, FIGHT, GAMEOVER)
+    let gameState = 'SELECTION';
+
+    // キャラクター定義
+    const CHARACTERS = [
+      {
+        id: 'futsu',
+        name: 'フツオ (普通)',
+        color: '#3498db',
+        width: 40,
+        height: 80,
+        speed: 5,
+        jumpPower: 14,
+        maxHp: 100,
+        power: 10,
+        desc: 'バランス型の標準ファイター'
+      },
+      {
+        id: 'debu',
+        name: 'デブゴン (デブ)',
+        color: '#e74c3c',
+        width: 70,
+        height: 90,
+        speed: 3,
+        jumpPower: 11,
+        maxHp: 150,
+        power: 18,
+        desc: '高耐久・高火力だが足が遅い'
+      },
+      {
+        id: 'gari',
+        name: 'ガリノシン (ガリ)',
+        color: '#2ecc71',
+        width: 25,
+        height: 95,
+        speed: 8,
+        jumpPower: 17,
+        maxHp: 70,
+        power: 8,
+        desc: '超高速移動＆ハイジャンプ'
+      },
+      {
+        id: 'chibi_debu',
+        name: 'チビコロ (チビデブ)',
+        color: '#f1c40f',
+        width: 55,
+        height: 50,
+        speed: 4.5,
+        jumpPower: 13,
+        maxHp: 120,
+        power: 12,
+        desc: '背が低く当たり判定が小さい'
+      },
+      {
+        id: 'onna',
+        name: 'ヒメ (女)',
+        color: '#9b59b6',
+        width: 35,
+        height: 75,
+        speed: 6.5,
+        jumpPower: 15,
+        maxHp: 85,
+        power: 14,
+        desc: '攻撃力が高いスピードタイプ'
+      }
+    ];
+
+    let p1SelectIndex = 0;
+    let p2SelectIndex = 1;
+    let isCpuMode = true;
+
+    // キー入力状況
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+      keys[e.key] = true;
+      handleMenuInput(e.key);
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.key] = false;
+    });
+
+    // プレイヤーオブジェクト
+    class Fighter {
+      constructor(charConfig, x, isP1) {
+        this.config = charConfig;
+        this.x = x;
+        this.y = 250;
+        this.vx = 0;
+        this.vy = 0;
+        this.width = charConfig.width;
+        this.height = charConfig.height;
+        this.hp = charConfig.maxHp;
+        this.maxHp = charConfig.maxHp;
+        this.isP1 = isP1;
+        this.isGrounded = false;
+        this.facing = isP1 ? 'right' : 'left';
+        this.isAttacking = false;
+        this.attackTimer = 0;
+        this.attackBox = { x: 0, y: 0, width: 0, height: 0, damage: 0 };
+        this.hitStun = 0;
+      }
+
+      update(opponent) {
+        if (this.hitStun > 0) {
+          this.hitStun--;
+          return;
+        }
+
+        // 重力適用
+        this.vy += 0.8;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // 地面衝突
+        const groundY = 380 - this.height;
+        if (this.y >= groundY) {
+          this.y = groundY;
+          this.vy = 0;
+          this.isGrounded = true;
+        }
+
+        // 画面端処理
+        if (this.x < 0) this.x = 0;
+        if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+
+        // 向き
+        if (opponent) {
+          this.facing = (this.x < opponent.x) ? 'right' : 'left';
+        }
+
+        // 攻撃タイマー
+        if (this.isAttacking) {
+          this.attackTimer--;
+          if (this.attackTimer <= 0) {
+            this.isAttacking = false;
+          }
+        }
+      }
+
+      jump() {
+        if (this.isGrounded) {
+          this.vy = -this.config.jumpPower;
+          this.isGrounded = false;
+        }
+      }
+
+      attack(type, opponent) {
+        if (this.isAttacking || this.hitStun > 0) return;
+
+        this.isAttacking = true;
+        this.attackTimer = 15;
+
+        const range = type === 'punch' ? 40 : 60;
+        const dmgMultiplier = type === 'punch' ? 1.0 : 1.3;
+
+        this.attackBox = {
+          x: this.facing === 'right' ? this.x + this.width : this.x - range,
+          y: this.y + 15,
+          width: range,
+          height: 30,
+          damage: Math.round(this.config.power * dmgMultiplier)
+        };
+
+        // 判定チェック
+        if (opponent && checkOverlap(this.attackBox, opponent)) {
+          opponent.takeDamage(this.attackBox.damage, this.facing);
+        }
+      }
+
+      takeDamage(damage, attackDirection) {
+        this.hp = Math.max(0, this.hp - damage);
+        this.hitStun = 12;
+        this.vx = attackDirection === 'right' ? 8 : -8;
+        setTimeout(() => { this.vx = 0; }, 100);
+      }
+
+      draw() {
+        ctx.save();
+
+        // 被弾中の赤フラッシュ
+        if (this.hitStun > 0) {
+          ctx.fillStyle = '#ffffff';
+        } else {
+          ctx.fillStyle = this.config.color;
+        }
+
+        // 本体描画
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        // 目線
+        ctx.fillStyle = '#000';
+        const eyeX = this.facing === 'right' ? this.x + this.width - 10 : this.x + 5;
+        ctx.fillRect(eyeX, this.y + 10, 6, 6);
+
+        // 攻撃描画
+        if (this.isAttacking) {
+          ctx.fillStyle = 'rgba(255, 230, 0, 0.7)';
+          ctx.fillRect(
+            this.attackBox.x,
+            this.attackBox.y,
+            this.attackBox.width,
+            this.attackBox.height
+          );
+        }
+
+        ctx.restore();
+      }
+    }
+
+    let p1, p2;
+
+    function handleMenuInput(key) {
+      if (gameState === 'SELECTION') {
+        // P1選択
+        if (key === 'a' || key === 'A') p1SelectIndex = (p1SelectIndex - 1 + CHARACTERS.length) % CHARACTERS.length;
+        if (key === 'd' || key === 'D') p1SelectIndex = (p1SelectIndex + 1) % CHARACTERS.length;
+
+        // P2選択
+        if (key === 'ArrowLeft') p2SelectIndex = (p2SelectIndex - 1 + CHARACTERS.length) % CHARACTERS.length;
+        if (key === 'ArrowRight') p2SelectIndex = (p2SelectIndex + 1) % CHARACTERS.length;
+
+        // モード切替
+        if (key === 'm' || key === 'M') isCpuMode = !isCpuMode;
+
+        // 決定 (Enter)
+        if (key === 'Enter') {
+          p1 = new Fighter(CHARACTERS[p1SelectIndex], 150, true);
+          p2 = new Fighter(CHARACTERS[p2SelectIndex], 600, false);
+          gameState = 'FIGHT';
+        }
+      } else if (gameState === 'GAMEOVER') {
+        if (key === 'Enter') {
+          gameState = 'SELECTION';
+        }
+      }
+    }
+
+    function checkOverlap(r1, r2) {
+      return !(r1.x + r1.width < r2.x ||
+               r1.x > r2.x + r2.width ||
+               r1.y + r1.height < r2.y ||
+               r1.y > r2.y + r2.height);
+    }
+
+    function updateCPU() {
+      if (!p2 || !isCpuMode || gameState !== 'FIGHT') return;
+
+      const dist = p1.x - p2.x;
+      const absDist = Math.abs(dist);
+
+      // 移動AI
+      if (absDist > 60) {
+        p2.vx = dist > 0 ? p2.config.speed * 0.7 : -p2.config.speed * 0.7;
+      } else {
+        p2.vx = 0;
+        // 攻撃判定
+        if (Math.random() < 0.05) {
+          p2.attack(Math.random() > 0.5 ? 'punch' : 'kick', p1);
+        }
+      }
+
+      // ランダムジャンプ
+      if (Math.random() < 0.01) {
+        p2.jump();
+      }
+    }
+
+    function processInput() {
+      if (gameState !== 'FIGHT') return;
+
+      // P1 移動
+      p1.vx = 0;
+      if (keys['a'] || keys['A']) p1.vx = -p1.config.speed;
+      if (keys['d'] || keys['D']) p1.vx = p1.config.speed;
+      if (keys['w'] || keys['W']) p1.jump();
+      if (keys['f'] || keys['F']) p1.attack('punch', p2);
+      if (keys['g'] || keys['G']) p1.attack('kick', p2);
+
+      // P2 移動（CPUでない場合のみ）
+      if (!isCpuMode) {
+        p2.vx = 0;
+        if (keys['ArrowLeft']) p2.vx = -p2.config.speed;
+        if (keys['ArrowRight']) p2.vx = p2.config.speed;
+        if (keys['ArrowUp']) p2.jump();
+        if (keys['k'] || keys['K']) p2.attack('punch', p1);
+        if (keys['l'] || keys['L']) p2.attack('kick', p1);
+      }
+    }
+
+    // ゲームループ
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (gameState === 'SELECTION') {
+        drawSelectionScreen();
+      } else if (gameState === 'FIGHT') {
+        processInput();
+        updateCPU();
+
+        p1.update(p2);
+        p2.update(p1);
+
+        // 背景・ステージ
+        ctx.fillStyle = '#222';
+        ctx.fillRect(0, 380, canvas.width, 70);
+
+        p1.draw();
+        p2.draw();
+
+        drawUI();
+
+        if (p1.hp <= 0 || p2.hp <= 0) {
+          gameState = 'GAMEOVER';
+        }
+      } else if (gameState === 'GAMEOVER') {
+        drawUI();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 36px sans-serif';
+        ctx.textAlign = 'center';
+
+        let winnerText = 'DRAW!';
+        if (p1.hp > 0) winnerText = '1P WIN!';
+        if (p2.hp > 0) winnerText = isCpuMode ? 'CPU WIN!' : '2P WIN!';
+
+        ctx.fillText(winnerText, canvas.width / 2, 200);
+        ctx.font = '20px sans-serif';
+        ctx.fillText('Press [Enter] to Restart', canvas.width / 2, 260);
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function drawSelectionScreen() {
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('CHARACTER SELECT', canvas.width / 2, 50);
+
+      ctx.font = '16px sans-serif';
+      ctx.fillText(`モード: [M]キーで変更 (${isCpuMode ? '1P vs CPU' : '1P vs 2P'})`, canvas.width / 2, 80);
+
+      // P1 選択情報
+      const p1Char = CHARACTERS[p1SelectIndex];
+      ctx.fillStyle = '#3498db';
+      ctx.fillText('【 1P (A/Dキー) 】', 200, 130);
+      ctx.fillText(p1Char.name, 200, 160);
+      ctx.font = '14px sans-serif';
+      ctx.fillText(p1Char.desc, 200, 190);
+      ctx.fillText(`HP: ${p1Char.maxHp} / PWR: ${p1Char.power} / SPD: ${p1Char.speed}`, 200, 210);
+
+      // P2 選択情報
+      const p2Char = CHARACTERS[p2SelectIndex];
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(`【 ${isCpuMode ? 'CPU' : '2P'} (←/→キー) 】`, 600, 130);
+      ctx.fillText(p2Char.name, 600, 160);
+      ctx.font = '14px sans-serif';
+      ctx.fillText(p2Char.desc, 600, 190);
+      ctx.fillText(`HP: ${p2Char.maxHp} / PWR: ${p2Char.power} / SPD: ${p2Char.speed}`, 600, 210);
+
+      // キャラクラー一覧プレビュー
+      CHARACTERS.forEach((c, index) => {
+        const cx = 120 + index * 140;
+        const cy = 280;
+
+        ctx.fillStyle = c.color;
+        ctx.fillRect(cx - c.width / 2, cy + (90 - c.height), c.width, c.height);
+
+        // 枠表示
+        if (index === p1SelectIndex) {
+          ctx.strokeStyle = '#3498db';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(cx - 35, cy - 10, 70, 110);
+        }
+        if (index === p2SelectIndex) {
+          ctx.strokeStyle = '#e74c3c';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(cx - 40, cy - 15, 80, 120);
+        }
+      });
+
+      ctx.fillStyle = '#f1c40f';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText('Press [ENTER] to Fight!', canvas.width / 2, 420);
+    }
+
+    function drawUI() {
+      // 1P HPゲージ
+      ctx.fillStyle = '#333';
+      ctx.fillRect(20, 20, 300, 25);
+      const p1HpRatio = Math.max(0, p1.hp / p1.maxHp);
+      ctx.fillStyle = '#2ecc71';
+      ctx.fillRect(20, 20, 300 * p1HpRatio, 25);
+      ctx.strokeStyle = '#fff';
+      ctx.strokeRect(20, 20, 300, 25);
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`1P: ${p1.config.name}`, 20, 15);
+
+      // 2P HPゲージ
+      ctx.fillStyle = '#333';
+      ctx.fillRect(480, 20, 300, 25);
+      const p2HpRatio = Math.max(0, p2.hp / p2.maxHp);
+      ctx.fillStyle = '#2ecc71';
+      ctx.fillRect(480 + (300 * (1 - p2HpRatio)), 20, 300 * p2HpRatio, 25);
+      ctx.strokeStyle = '#fff';
+      ctx.strokeRect(480, 20, 300, 25);
+
+      ctx.textAlign = 'right';
+      ctx.fillText(`${isCpuMode ? 'CPU' : '2P'}: ${p2.config.name}`, 780, 15);
+    }
+
+    // ループ開始
+    gameLoop();
+  </script>
+</body>
+</html>
