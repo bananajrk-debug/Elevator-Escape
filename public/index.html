@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>消しゴム奪取＆エレベーター脱出 - 本格迷路編</title>
+    <title>消しゴム奪取＆エレベーター脱出 - ミニマップ搭載編</title>
     <style>
         body {
             margin: 0;
@@ -60,14 +60,24 @@
             z-index: 5;
             border: 1px solid #444;
         }
+        #minimapCanvas {
+            position: absolute;
+            top: 10px; right: 10px;
+            width: 160px; height: 160px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #555;
+            border-radius: 6px;
+            z-index: 5;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
 <div id="screen">
     <div id="lobby" class="panel">
-        <h1>消しゴム奪取：本格迷路からの脱出</h1>
-        <p>入り組んだ迷路を抜け、最奥にある消しゴムを奪って最下部中央のエレベーターへ駆け込め！</p>
+        <h1>消しゴム奪取：完全版迷路</h1>
+        <p>右上の全体マップで構造を確認しつつ、鬼に見つからないよう気を付けて消しゴムを奪い脱出しろ！</p>
         <input type="text" id="playerName" placeholder="プレイヤー名を入力" value="プレイヤー1">
         <div>
             <button class="btn-primary" onclick="startGame()">ゲームスタート</button>
@@ -78,6 +88,7 @@
         <div id="hud-text">ステータス</div>
     </div>
 
+    <canvas id="minimapCanvas" width="160" height="160" style="display:none;"></canvas>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 </div>
 
@@ -86,6 +97,8 @@
     const socket = io();
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    const minimapCanvas = document.getElementById('minimapCanvas');
+    const minimapCtx = minimapCanvas.getContext('2d');
     const lobby = document.getElementById('lobby');
     const hud = document.getElementById('hud');
     const hudText = document.getElementById('hud-text');
@@ -95,19 +108,19 @@
     const CAMERA_ZOOM = 1.35;
 
     const walls = [
-        { x: 0, y: 0, w: MAP_WIDTH, h: 60 },
-        { x: 0, y: MAP_HEIGHT - 60, w: MAP_WIDTH, h: 60 },
-        { x: 0, y: 0, w: 60, h: MAP_HEIGHT },
-        { x: MAP_WIDTH - 60, y: 0, w: 60, h: MAP_HEIGHT },
-        { x: 300, y: 300, w: 1400, h: 60 },
-        { x: 300, y: 360, w: 60, h: 400 },
-        { x: 700, y: 500, w: 60, h: 800 },
-        { x: 1100, y: 360, w: 60, h: 500 },
-        { x: 500, y: 900, w: 1000, h: 60 },
-        { x: 300, y: 1200, w: 900, h: 60 },
-        { x: 1500, y: 600, w: 60, h: 1000 },
-        { x: 900, y: 1500, w: 700, h: 60 },
-        { x: 500, y: 1500, w: 60, h: 300 }
+        { x: 0, y: 0, w: MAP_WIDTH, h: 50 },
+        { x: 0, y: MAP_HEIGHT - 50, w: MAP_WIDTH, h: 50 },
+        { x: 0, y: 0, w: 50, h: MAP_HEIGHT },
+        { x: MAP_WIDTH - 50, y: 0, w: 50, h: MAP_HEIGHT },
+        { x: 250, y: 250, w: 1500, h: 50 },
+        { x: 250, y: 300, w: 50, h: 450 },
+        { x: 650, y: 450, w: 50, h: 850 },
+        { x: 1050, y: 300, w: 50, h: 550 },
+        { x: 450, y: 950, w: 1100, h: 50 },
+        { x: 250, y: 1250, w: 950, h: 50 },
+        { x: 1500, y: 550, w: 50, h: 1000 },
+        { x: 850, y: 1550, w: 850, h: 50 },
+        { x: 450, y: 1550, w: 50, h: 350 }
     ];
 
     let player = null;
@@ -119,6 +132,7 @@
         const name = document.getElementById('playerName').value || 'プレイヤー';
         lobby.style.display = 'none';
         hud.style.display = 'block';
+        minimapCanvas.style.display = 'block';
         socket.emit('join_game', { name, mode: 'cpu' });
     }
 
@@ -157,16 +171,15 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!player || !gameData) return;
 
+        // メイン画面（プレイヤー視点ズーム）
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
         ctx.translate(-player.x, -player.y);
 
-        // 床
         ctx.fillStyle = '#1e1e1e';
         ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
-        // 迷路の壁の描画
         for (let w of walls) {
             ctx.fillStyle = '#3d3d3d';
             ctx.fillRect(w.x, w.y, w.w, w.h);
@@ -175,7 +188,6 @@
             ctx.strokeRect(w.x, w.y, w.w, w.h);
         }
 
-        // エレベーター（最下部中央）
         let el = gameData.elevator;
         ctx.fillStyle = el.isOpen ? '#2ed573' : '#ff4757';
         ctx.fillRect(el.x - 40, el.y - 25, 80, 50);
@@ -184,7 +196,6 @@
         ctx.textAlign = 'center';
         ctx.fillText(el.isOpen ? `脱出口 (${Math.ceil(el.timer/60)}s)` : 'エレベーター閉', el.x, el.y - 35);
 
-        // 消しゴム（最奥の上部中央）
         let e = gameData.eraser;
         if (!e.isTaken) {
             ctx.fillStyle = '#ffa502';
@@ -211,7 +222,7 @@
             ctx.fillText('📦 消しゴム所持!', player.x, player.y + 28);
         }
 
-        // CPU鬼
+        // 鬼（メイン画面では見える）
         if (cpu) {
             ctx.beginPath();
             ctx.arc(cpu.x, cpu.y, cpu.radius, 0, Math.PI * 2);
@@ -228,7 +239,34 @@
 
         ctx.restore();
 
-        // HUD
+        // ミニマップの描画（※鬼の位置は非表示！プレイヤー、消しゴム、エレベーターのみ表示）
+        minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+        let scaleX = minimapCanvas.width / MAP_WIDTH;
+        let scaleY = minimapCanvas.height / MAP_HEIGHT;
+
+        // 壁
+        minimapCtx.fillStyle = '#555';
+        for (let w of walls) {
+            minimapCtx.fillRect(w.x * scaleX, w.y * scaleY, w.w * scaleX, w.h * scaleY);
+        }
+
+        // エレベーター
+        minimapCtx.fillStyle = el.isOpen ? '#2ed573' : '#ff4757';
+        minimapCtx.fillRect((el.x - 40) * scaleX, (el.y - 25) * scaleY, 80 * scaleX, 50 * scaleY);
+
+        // 消しゴム
+        if (!e.isTaken) {
+            minimapCtx.fillStyle = '#ffa502';
+            minimapCtx.fillRect((e.x - 16) * scaleX, (e.y - 12) * scaleY, 32 * scaleX, 24 * scaleY);
+        }
+
+        // プレイヤーの位置のみ表示（鬼の位置は隠されています）
+        minimapCtx.fillStyle = '#2ed573';
+        minimapCtx.beginPath();
+        minimapCtx.arc(player.x * scaleX, player.y * scaleY, 4, 0, Math.PI * 2);
+        minimapCtx.fill();
+
+        // ステータス
         if (player.escaped) {
             hudText.innerHTML = '<span style="color:#2ed573; font-size:18px;">🎉 脱出成功！おめでとう！</span>';
         } else if (gameData.gameOver) {
