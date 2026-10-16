@@ -207,7 +207,8 @@ function startGame(room) {
     time: MATCH_TIME, playT: 0, endAt: 0, pingClock: 0, ents: [], warps: [], chests: [], potions: [],
     hintOff: { x: Math.cos(ang) * mag, y: Math.sin(ang) * mag },
     eraser: { x: 0, y: 0, home: { x: 0, y: 0 }, placed: false, carried: false, cool: 0 },
-    elev: { open: false, left: 0, door: 0 }
+    elev: { open: false, left: 0, door: 0 },
+    escapeTimer: 0, escapingSide: 0
   };
 
   const w1 = randomSpot(g), w2 = randomSpot(g);
@@ -221,7 +222,6 @@ function startGame(room) {
     { x: randomSpot(g).x, y: randomSpot(g).y, opened: false }
   ];
 
-  // 回復薬が必ず通路の中心・壁に埋まらない位置に生成されるよう修正
   g.potions = [
     { x: randomSpot(g).x, y: randomSpot(g).y, taken: false },
     { x: randomSpot(g).x, y: randomSpot(g).y, taken: false }
@@ -252,7 +252,6 @@ function validSpot(g, x, y) {
 function randomSpot(g) {
   const cands = [];
   for (let ty = 0; ty < N; ty++) for (let tx = 0; tx < N; tx++) {
-    // 完全にタイルの中心座標にする
     const x = tx * T + T / 2, y = ty * T + T / 2;
     if (g.grid[ty][tx] === 0 && validSpot(g, x, y)) cands.push({ x, y });
   }
@@ -328,6 +327,17 @@ function stepPlace(g, dt) {
 
 function step(g, dt) {
   if (g.status !== 'playing') return;
+
+  // 脱出演出フェーズ
+  if (g.status === 'escaping') {
+    g.escapeTimer -= dt;
+    if (g.escapeTimer <= 0) {
+      g.status = 'runwin';
+      g.slide = g.elev.left;
+    }
+    return;
+  }
+
   for (const e of g.ents) {
     if (e.invuln > 0) e.invuln -= dt;
     if (e.stun > 0) e.stun -= dt;
@@ -354,7 +364,6 @@ function step(g, dt) {
   for (const e of g.ents) {
     if (!e.alive) continue;
 
-    // 自動スタングレネード判定（半径3ブロック=240px以内）
     if (e.role === 'runner' && e.item === 'stun') {
       for (const o of g.ents) {
         if (o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - e.x, o.y - e.y) < 240) {
@@ -366,7 +375,6 @@ function step(g, dt) {
       }
     }
 
-    // 回復薬の拾い上げ判定
     if (e.role === 'runner' && e.hp < 100) {
       for (const pot of g.potions) {
         if (!pot.taken && Math.hypot(e.x - pot.x, e.y - pot.y) < RUNNER_R + 15) {
@@ -420,13 +428,20 @@ function step(g, dt) {
       }
     }
   }
+  
+  // エレベーター到達時の脱出演出トリガー
   for (const r of runnersAlive) {
     if (!r.hasEraser || !el.open || el.door <= DOOR_PASS) continue;
     const c = elevCenter(r.side);
-    if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) { g.status = 'runwin'; g.slide = el.left; return; }
+    if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) {
+      g.status = 'escaping';
+      g.escapeTimer = 3.0; // 3秒間の脱出・閉扉演出
+      g.escapingSide = r.side;
+      ev(g, '🚪 ' + r.name + ' がエレベーターに飛び込んだ！ドアが閉まる…！');
+      return;
+    }
   }
 
-  // 攻撃・ダメージ判定（鬼がヒットすると初期位置へテレポートし、リスポーン硬直3秒）
   for (const o of g.ents) {
     if (o.role !== 'oni' || o.stun > 0) continue;
     for (const r of runnersAlive) {
@@ -434,8 +449,6 @@ function step(g, dt) {
       if (Math.hypot(r.x - o.x, r.y - o.y) < RUNNER_R + ONI_R - 4) {
         r.hp -= 50;
         r.invuln = INVULN;
-        
-        // 鬼をスポーン位置へ強制送還 ＆ 3秒間硬直（リスポーン時間3秒）
         o.x = o.spawnX; o.y = o.spawnY;
         o.stun = 3.0;
 
@@ -484,7 +497,6 @@ function snapshot(g, r) {
   const E = g.eraser;
   let er = null, hint = null;
   if (E.placed) {
-    // 逃げ側には視界外でも常に消しゴムの正確な位置を渡して、画面端の矢印で確実に方向を示せるようにする
     if (r.role === 'runner') {
       er = E.carried ? { c: true, x: E.x, y: E.y } : { x: E.x, y: E.y, c: false };
     } else {
@@ -515,7 +527,8 @@ function snapshot(g, r) {
 
   return {
     s: g.status, ph: g.phase, pl: Math.max(0, g.placeLeft), placed: E.placed,
-    t: g.time, slide: g.slide || 0, role: r.role, side: ref.side,
+    t: g.time, slide: g.slide || 0, escapeTimer: g.escapeTimer || 0, escapingSide: g.escapingSide || 0,
+    role: r.role, side: ref.side,
     me: { x: r.x, y: r.y, al: r.alive, hp: r.hp, e: r.hasEraser, inv: r.invuln > 0, st: r.stun > 0, item: r.item, speed: r.speedBoost > 0, invis: r.invisible > 0 },
     cam: { x: ref.x, y: ref.y }, ents, ping, er, hint, chests, potions, warps, oniAreas,
     el: { open: g.elev.open, left: g.elev.left, door: g.elev.door },
