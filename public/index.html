@@ -76,14 +76,13 @@
   #start { position: absolute; right: 18px; bottom: 18px; z-index: 2; font-size: 32px; padding: 20px 46px; font-style: italic; }
   #lnote { position: absolute; bottom: 92px; right: 22px; z-index: 2; font-size: 13px; color: #d6d0ff; text-align: right; max-width: 320px; }
 
-  /* ---------- コード拡大モーダル ---------- */
+  /* ---------- モーダル・結果 ---------- */
   #codeModal { background: rgba(8,4,28,.92); align-items: center; justify-content: center; flex-direction: column; cursor: pointer; z-index: 8; }
   #codeModal .lab { letter-spacing: 8px; color: #ffd23f; font-weight: 900; font-size: clamp(14px, 3vw, 28px); }
   #codeModal .big { font-size: clamp(60px, 22vw, 260px); font-weight: 900; font-style: italic; letter-spacing: .12em; line-height: 1.1; -webkit-text-stroke: 4px #1b0f4d; paint-order: stroke fill; background: linear-gradient(#fff6b0, #ffb703); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 8px 0 #1b0f4d; }
   #codeModal .sub { margin-top: 16px; color: #cfc9f5; }
   #codeModal .btn { margin-top: 20px; font-size: 20px; padding: 14px 34px; }
 
-  /* ---------- 結果 ---------- */
   #result { background: rgba(0,0,0,.82); align-items: center; justify-content: center; flex-direction: column; text-align: center; }
   #result h1 { font-size: 64px; margin: 0 0 8px; font-style: italic; -webkit-text-stroke: 2px #000; }
   #result p { color: #ddd; margin: 6px 0; font-size: 18px; }
@@ -274,7 +273,7 @@ socket.on('state', (s) => {
     $('resTitle').textContent = iWin ? '勝利！' : '敗北…';
     $('resTitle').style.color = iWin ? '#4ade80' : '#f87171';
     $('resMsg').textContent = s.s === 'runwin' ? (s.slide < 2 ? 'ギリギリで扉の隙間に滑り込んだ！（残り ' + s.slide.toFixed(1) + ' 秒）' : '消しゴムを持って脱出成功！')
-      : s.s === 'oniwin' ? '逃げ側は全員捕まった。' : '時間切れ。逃げ切れなかった。';
+      : s.s === 'oniwin' ? '逃げ側は全員倒された。' : '時間切れ。逃げ切れなかった。';
     if (isSoloGame) $('toLobbyBtn').textContent = '🏠 タイトルに戻る';
     else $('toLobbyBtn').textContent = '🏠 ロビーに戻る';
     show('result', true);
@@ -407,6 +406,14 @@ function drawActor(e, v, alpha, isMe, now) {
   }
   ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(e.n || '', 0, r + 15);
+
+  // 体力バー描画 (逃げ側)
+  if (!isOni && e.al) {
+    const hpPct = (e.hp || 100) / 100;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(-18, -r - 12, 36, 6);
+    ctx.fillStyle = hpPct > 0.5 ? '#22c55e' : '#ef4444'; ctx.fillRect(-18, -r - 12, 36 * hpPct, 6);
+  }
+
   ctx.restore();
 }
 
@@ -463,13 +470,21 @@ function frame(now) {
         ctx.strokeStyle = '#e879f9'; ctx.lineWidth = 3; ctx.stroke();
       }
     }
-    // 大きくなった宝箱 (36x36)
     if (state.chests) {
       for (const ch of state.chests) {
         ctx.fillStyle = '#fbbf24'; ctx.fillRect(ch.x - 18, ch.y - 18, 36, 36);
         ctx.strokeStyle = '#d97706'; ctx.lineWidth = 3; ctx.strokeRect(ch.x - 18, ch.y - 18, 36, 36);
         ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText('🎁', ch.x, ch.y + 4);
+      }
+    }
+    // 回復薬の描画
+    if (state.potions) {
+      for (const pot of state.potions) {
+        ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(pot.x, pot.y, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('🧪', pot.x, pot.y + 3);
       }
     }
     if (state.er && !state.er.c) {
@@ -484,7 +499,7 @@ function frame(now) {
       if (e.role !== myRole) { const d = Math.hypot(v.x - camV.x, v.y - camV.y); a = clamp((lightR * 0.8 - d) / (lightR * 0.35), 0, 1); if (a <= 0.02) continue; }
       drawActor(e, v, a, false, now);
     }
-    if (state.me.al || myRole === 'oni') drawActor({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, n: myName, skin: mySkin }, meV, state.me.invis ? 0.3 : 1, true, now);
+    if (state.me.al || myRole === 'oni') drawActor({ role: myRole, al: true, hp: state.me.hp, e: state.me.e, st: state.me.st, inv: state.me.inv, n: myName, skin: mySkin }, meV, state.me.invis ? 0.3 : 1, true, now);
   });
 
   // ===== 暗闇・靄 =====
@@ -533,7 +548,7 @@ function frame(now) {
   drawMini(now);
   updateHud();
 
-  // Mキーによる拡大マップ描画
+  // Mキーによる全体マップ描画
   if (mapOpen) {
     ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, cv.width, cv.height);
     const mapSize = Math.min(cv.width, cv.height) * 0.75;
@@ -560,7 +575,7 @@ function drawMini(now) {
     mctx.fillRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc);
   }
 
-  // 鬼の場所を示す大きめの円（正確な位置ではなくエリア表示）
+  // 鬼のエリア円
   if (myRole === 'runner' && state.oniAreas) {
     for (const area of state.oniAreas) {
       mctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; mctx.lineWidth = 2;
@@ -598,11 +613,10 @@ function updateHud() {
       if (!s.placed) { b.innerHTML = '消しゴムを置く場所を選べ！（残り ' + sec + '秒）<br><span style="font-size:15px;color:#fff">好きな場所まで歩いて SPACE またはボタンで設置</span>'; pb.style.display = 'block'; }
       else b.textContent = '設置完了…スタートまで ' + sec;
     } else b.innerHTML = '鬼が消しゴムを隠しています（残り ' + sec + '秒）<br><span style="font-size:15px;color:#fff">スタートまで待機中…</span>';
-  } else if (myRole === 'runner' && !s.me.al && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#fca5a5'; b.textContent = '捕まった…仲間を観戦中'; }
-  else if (myRole === 'oni' && s.me.st && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = '硬直中…'; }
+  } else if (myRole === 'runner' && !s.me.al && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#fca5a5'; b.textContent = '倒された…仲間を観戦中'; }
+  else if (myRole === 'oni' && s.me.st && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = 'スタン中…'; }
   else {
     b.style.display = 'none';
-    // 宝箱の近くにいるか判定
     if (myRole === 'runner' && s.me.al && !s.me.item && s.chests) {
       for (const ch of s.chests) {
         if (Math.hypot(s.me.x - ch.x, s.me.y - ch.y) < 55) {
@@ -615,13 +629,14 @@ function updateHud() {
 
   if (s.me.item && s.s === 'playing') {
     ib.style.display = 'block';
-    const names = { stun: 'スタングレネード', speed: 'スピードブーツ', invis: '透明化スーツ' };
+    const names = { stun: '自動スタングレネード (近接自動)', speed: 'スピードブーツ', invis: '透明化スーツ' };
     ib.textContent = '⚡ アイテム: ' + names[s.me.item] + ' (Q)';
   }
 
   const t = Math.max(0, Math.ceil(s.t)), mm = Math.floor(t / 60), ss = String(t % 60).padStart(2, '0');
   let h = '<b style="color:' + (myRole === 'oni' ? '#f87171' : '#60a5fa') + '">' + (myRole === 'oni' ? '👹 鬼側' : '🏃 逃げ側') + '</b> 残り ' + mm + ':' + ss;
-  h += '<br>生存している逃げ側：' + s.n;
+  if (myRole === 'runner') h += '<br>HP: <b style="color:' + (s.me.hp > 50 ? '#4ade80' : '#f87171') + '">' + s.me.hp + '%</b>';
+  h += '<br>生存中の逃げ側：' + s.n;
   if (myRole === 'runner') h += '<br>消しゴム：' + (s.me.e ? '<b style="color:#f9a8d4">所持中！自分のエレベーターへ</b>' : s.er && s.er.c ? '誰かが所持' : '矢印の方向へ探索せよ');
   else h += '<br>消しゴム：' + (!s.placed ? '未設置' : s.er && s.er.c ? '奪われた！' : '設置完了');
   h += '<br>エレベーター：' + (el.open ? '<b style="color:' + (el.left < 3 ? '#f87171' : el.left < 8 ? '#fbbf24' : '#4ade80') + '">OPEN 残り ' + el.left.toFixed(1) + '秒</b>' : '<span style="color:#f87171">CLOSED</span>');
