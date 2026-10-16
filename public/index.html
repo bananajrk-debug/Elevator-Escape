@@ -1,1 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>消しゴム奪取＆エレベーター脱出</title>
+    <style>
+        body {
+            margin: 0;
+            background: #1e1e1e;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            background: #2d3436;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+        #ui {
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
 
+    <div id="ui">読み込み中...</div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const ui = document.getElementById('ui');
+
+        let myId = null;
+        let players = {};
+        let gameData = { eraser: {}, elevator: {} };
+        const keys = {};
+
+        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+        socket.on('init', (data) => {
+            myId = data.id;
+            players = data.players;
+            gameData = data.gameData;
+        });
+
+        socket.on('update', (data) => {
+            players = data.players;
+            gameData = data.gameData;
+        });
+
+        function update() {
+            if (!players[myId] || players[myId].escaped) return;
+
+            let speed = 4;
+            let p = players[myId];
+            if (keys['w'] || keys['allowup']) p.y -= speed;
+            if (keys['s'] || keys['allowdown']) p.y += speed;
+            if (keys['a'] || keys['allowleft']) p.x -= speed;
+            if (keys['d'] || keys['allowright']) p.x += speed;
+
+            // 画面外に出ないように制限
+            p.x = Math.max(p.radius, Math.min(canvas.width - p.radius, p.x));
+            p.y = Math.max(p.radius, Math.min(canvas.height - p.radius, p.y));
+
+            socket.emit('move', { x: p.x, y: p.y });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // エレベーターの描画
+            ctx.fillStyle = gameData.elevator.isOpen ? '#00b894' : '#636e72';
+            ctx.fillRect(gameData.elevator.x - 25, gameData.elevator.y - 25, 50, 50);
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px sans-serif';
+            ctx.fillText(gameData.elevator.isOpen ? `OPEN (${Math.ceil(gameData.elevator.timer/60)}s)` : 'CLOSED', gameData.elevator.x - 30, gameData.elevator.y - 35);
+
+            // 消しゴムの描画
+            if (!gameData.eraser.isTaken) {
+                ctx.fillStyle = '#fdcb6e';
+                ctx.fillRect(gameData.eraser.x - 10, gameData.eraser.y - 10, 20, 15);
+                ctx.strokeStyle = '#e17055';
+                ctx.strokeRect(gameData.eraser.x - 10, gameData.eraser.y - 10, 20, 15);
+            }
+
+            // プレイヤーの描画
+            for (let id in players) {
+                let p = players[id];
+                if (p.escaped) continue;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#fff';
+                ctx.stroke();
+                ctx.closePath();
+
+                // 役割と消しゴム所持の表示
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px sans-serif';
+                ctx.fillText(p.role === 'oni' ? '👹 鬼' : '🏃 逃げ', p.x - 15, p.y - 20);
+
+                if (p.hasEraser) {
+                    ctx.fillText(' eraser ', p.x - 15, p.y + 25);
+                }
+            }
+
+            // UI更新
+            if (players[myId]) {
+                let roleStr = players[myId].role === 'oni' ? '【鬼】鬼から逃げを守り、消しゴムを守れ！' : '【逃げ側】消しゴムを奪ってエレベーターで脱出しろ！';
+                ui.innerText = roleStr;
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>
