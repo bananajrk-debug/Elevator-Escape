@@ -5,91 +5,172 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>消しゴム奪取＆エレベーター脱出</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; color: #fff; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: "Hiragino Sans", "Meiryo", sans-serif; color: #fff; }
   canvas#game { display: block; width: 100vw; height: 100vh; }
-  #mini { position: fixed; top: 12px; right: 12px; width: 180px; height: 180px; border: 2px solid #888; background: #111; display: none; }
-  #hud { position: fixed; top: 12px; left: 12px; font-size: 16px; text-shadow: 0 0 4px #000; display: none; line-height: 1.6; }
-  .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,.85); text-align: center; }
-  .overlay h1 { margin: 0 0 8px; font-size: 32px; }
+  #mini { position: fixed; top: 12px; right: 12px; width: 160px; height: 160px; border: 2px solid #888; background: #111; display: none; }
+  #hud { position: fixed; top: 12px; left: 12px; font-size: 15px; text-shadow: 0 0 4px #000; display: none; line-height: 1.7; }
+  #toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
+  #toast div { background: rgba(0,0,0,.7); padding: 6px 14px; margin-top: 6px; border-radius: 6px; font-size: 16px; }
+  #banner { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); font-size: 18px; color: #fca5a5; text-shadow: 0 0 6px #000; display: none; }
+  .overlay { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,.88); text-align: center; z-index: 5; }
+  .overlay h1 { margin: 0 0 8px; font-size: 30px; }
   .overlay p { margin: 6px 0; color: #ccc; }
-  input, button { font-size: 18px; padding: 10px 16px; margin-top: 14px; border-radius: 8px; border: none; }
+  input, select, button { font-size: 17px; padding: 9px 14px; margin: 6px 4px 0; border-radius: 8px; border: none; }
   button { background: #e8453c; color: #fff; cursor: pointer; }
-  #result { display: none; }
+  button.sub { background: #374151; }
+  button:disabled { opacity: .4; cursor: default; }
+  #plist { list-style: none; padding: 0; margin: 10px 0; min-width: 280px; }
+  #plist li { display: flex; justify-content: space-between; padding: 6px 12px; background: #1f2937; margin: 4px 0; border-radius: 6px; }
+  .badge { font-size: 13px; padding: 2px 8px; border-radius: 10px; background: #475569; }
+  .badge.runner { background: #2563eb; } .badge.oni { background: #dc2626; }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
-<canvas id="mini" width="180" height="180"></canvas>
+<canvas id="mini" width="160" height="160"></canvas>
 <div id="hud"></div>
+<div id="banner"></div>
+<div id="toast"></div>
 
-<div id="title" class="overlay">
+<div id="title" class="overlay" style="display:flex">
   <h1>消しゴム奪取＆エレベーター脱出</h1>
-  <p>最奥の消しゴムを奪い、エレベーターへ戻れ。鬼はミニマップに映らない。</p>
+  <p>逃げ側は協力して消しゴムを奪い、エレベーターへ。鬼は暗闇に潜んで追い詰める。</p>
   <p>操作：WASD / 矢印キー</p>
-  <input id="name" maxlength="12" placeholder="プレイヤー名" />
-  <button id="start">CPU対戦スタート</button>
+  <div>
+    <input id="name" maxlength="12" placeholder="プレイヤー名">
+    <input id="room" maxlength="10" placeholder="ルームコード(空=PUBLIC)">
+  </div>
+  <div>
+    <select id="role">
+      <option value="auto">役割：おまかせ</option>
+      <option value="runner">役割：逃げ側</option>
+      <option value="oni">役割：鬼側</option>
+    </select>
+    <button id="join">ルームに入る</button>
+  </div>
 </div>
+
+<div id="lobby" class="overlay">
+  <h1>ロビー <span id="lcode" style="color:#fbbf24"></span></h1>
+  <p id="lnote"></p>
+  <ul id="plist"></ul>
+  <div>
+    <button class="sub" data-role="runner">逃げ側にする</button>
+    <button class="sub" data-role="oni">鬼側にする</button>
+    <button class="sub" data-role="auto">おまかせ</button>
+  </div>
+  <div><button id="start">ゲーム開始</button><button class="sub" id="leave">退出</button></div>
+  <p style="font-size:13px">鬼を選んだ人がいない場合は CPU の鬼が参加します。おまかせは人数に応じて自動で割り振られます。</p>
+</div>
+
 <div id="result" class="overlay">
   <h1 id="resTitle"></h1>
   <p id="resMsg"></p>
-  <button id="retry">もう一度</button>
+  <p style="font-size:13px">まもなくロビーに戻ります…</p>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const CAMERA_ZOOM = 1.35;
 const socket = io();
-const cv = document.getElementById('game'), ctx = cv.getContext('2d');
-const mini = document.getElementById('mini'), mctx = mini.getContext('2d');
-const hud = document.getElementById('hud');
+const $ = (id) => document.getElementById(id);
+const cv = $('game'), ctx = cv.getContext('2d');
+const mini = $('mini'), mctx = mini.getContext('2d');
+const hud = $('hud');
 
-let world = null, mazeCanvas = null, state = null, playing = false;
-const view = { p: null, o: null };   // 描画用（補間）位置
-let myName = 'プレイヤー';
+let world = null, cfg = null, mazeCanvas = null, state = null, inGame = false, myRole = 'runner', myName = '', lobbyData = null;
+let views = {}, camV = null, meV = null, shake = 0;
 
 function resize() { cv.width = innerWidth; cv.height = innerHeight; }
 addEventListener('resize', resize); resize();
 
-// ---- UI ----
-function startGame() {
-  myName = document.getElementById('name').value.trim() || 'プレイヤー';
-  socket.emit('join', { name: myName });
+// ---------- サウンド ----------
+let AC = null;
+function beep(f, d, v, type) {
+  if (!AC) return;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type || 'square'; o.frequency.value = f; g.gain.value = v || 0.06;
+  o.connect(g); g.connect(AC.destination); o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + d); o.stop(AC.currentTime + d);
 }
-document.getElementById('start').onclick = startGame;
-document.getElementById('retry').onclick = startGame;
-document.getElementById('name').addEventListener('keydown', (e) => { if (e.key === 'Enter') startGame(); });
+function initAudio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
 
+// ---------- 画面切替 / ロビー ----------
+function show(id, on) { $(id).style.display = on ? 'flex' : 'none'; }
+$('join').onclick = () => {
+  initAudio();
+  socket.emit('join', { name: $('name').value, room: $('room').value, role: $('role').value });
+};
+$('start').onclick = () => { initAudio(); socket.emit('start'); };
+$('leave').onclick = () => { socket.emit('leave'); lobbyData = null; show('lobby', false); show('title', true); };
+document.querySelectorAll('#lobby [data-role]').forEach((b) => b.onclick = () => socket.emit('setRole', b.dataset.role));
+const roleLabel = { auto: 'おまかせ', runner: '逃げ側', oni: '鬼側' };
+
+socket.on('errmsg', (m) => alert(m));
+socket.on('lobby', (d) => {
+  lobbyData = d;
+  if (inGame && d.state === 'playing') return;         // 試合中の更新は無視
+  if (d.state === 'lobby') { inGame = false; hideGameUI(); show('result', false); }
+  if (!inGame) { show('title', false); show('lobby', true); renderLobby(); }
+});
+function renderLobby() {
+  const d = lobbyData;
+  $('lcode').textContent = '[' + d.code + ']';
+  const ul = $('plist'); ul.innerHTML = '';
+  for (const p of d.players) {
+    const li = document.createElement('li');
+    const s = document.createElement('span'); s.textContent = p.name + (p.id === d.host ? ' ★' : '') + (p.id === d.you ? '（あなた）' : '');
+    const b = document.createElement('span'); b.className = 'badge ' + p.role; b.textContent = roleLabel[p.role];
+    li.append(s, b); ul.appendChild(li);
+  }
+  const host = d.host === d.you;
+  $('start').style.display = host ? '' : 'none';
+  $('start').disabled = d.state !== 'lobby';
+  $('lnote').textContent = d.state === 'playing' ? '試合中です。終了までお待ちください。' : (host ? 'あなたがホストです。準備ができたら開始してください。' : 'ホストの開始を待っています…');
+}
+function hideGameUI() { mini.style.display = 'none'; hud.style.display = 'none'; $('banner').style.display = 'none'; }
+
+// ---------- ゲーム開始 ----------
 socket.on('init', (w) => {
-  world = w;
-  buildMaze();
-  state = null; view.p = null; view.o = null;
-  playing = true;
-  document.getElementById('title').style.display = 'none';
-  document.getElementById('result').style.display = 'none';
+  world = w; cfg = w.cfg; myRole = w.role; myName = w.name;
+  buildMaze(); state = null; views = {}; camV = null; meV = null; prevOpen = false; lastSec = -1;
+  inGame = true;
+  show('title', false); show('lobby', false); show('result', false);
   mini.style.display = 'block'; hud.style.display = 'block';
+  toast(myRole === 'runner' ? '逃げ側：消しゴムを奪ってエレベーターへ！' : '鬼側：逃げ側を追い詰めろ！（開始3秒は動けない）');
 });
 
+socket.on('ev', (m) => { toast(m); });
+function toast(m) {
+  const d = document.createElement('div'); d.textContent = m; $('toast').appendChild(d);
+  setTimeout(() => d.remove(), 3500);
+}
+
+let prevOpen = false, lastSec = -1, ended = false;
 socket.on('state', (s) => {
   state = s;
-  if (!view.p) view.p = { x: s.p.x, y: s.p.y };
-  if (s.o && !view.o) view.o = { x: s.o.x, y: s.o.y };
-  if (!s.o) view.o = null;
-  if (s.s !== 'playing' && playing) {
-    playing = false;
-    const res = document.getElementById('result');
-    document.getElementById('resTitle').textContent = s.s === 'won' ? '脱出成功！' : 'ゲームオーバー';
-    document.getElementById('resMsg').textContent = s.s === 'won' ? '消しゴムを持ってエレベーターに乗り込んだ！' : '消しゴムを持たずに鬼に捕まった…';
-    res.style.display = 'flex';
+  if (!inGame) return;
+  if (s.s === 'playing') ended = false;
+  if (s.s !== 'playing' && !ended) {
+    ended = true;
+    const runnerWin = s.s === 'runwin';
+    const iWin = (myRole === 'runner') === runnerWin;
+    $('resTitle').textContent = iWin ? '勝利！' : '敗北…';
+    $('resTitle').style.color = iWin ? '#4ade80' : '#f87171';
+    let msg = '';
+    if (s.s === 'runwin') msg = s.slide < 2 ? 'ギリギリで扉の隙間に滑り込んだ！（残り ' + s.slide.toFixed(1) + ' 秒）' : '消しゴムを持って脱出成功！';
+    else if (s.s === 'oniwin') msg = '逃げ側は全員捕まった。';
+    else msg = '時間切れ。逃げ切れなかった。';
+    $('resMsg').textContent = msg;
+    show('result', true);
   }
 });
 
-// ---- 入力 ----
+// ---------- 入力 ----------
 const keys = { u: 0, d: 0, l: 0, r: 0 };
-const map = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
+const kmap = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
 function setKey(e, v) {
-  const k = map[e.code];
-  if (!k) return;
-  if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+  const k = kmap[e.code];
+  if (!k || !inGame) return;
   e.preventDefault();
   if (keys[k] !== v) { keys[k] = v; socket.emit('input', keys); }
 }
@@ -97,114 +178,237 @@ addEventListener('keydown', (e) => setKey(e, 1));
 addEventListener('keyup', (e) => setKey(e, 0));
 addEventListener('blur', () => { for (const k in keys) keys[k] = 0; socket.emit('input', keys); });
 
-// ---- 迷路の事前描画 ----
+// ---------- 迷路の事前描画 ----------
 function buildMaze() {
   const { grid, T, N, map: M } = world;
-  mazeCanvas = document.createElement('canvas');
-  mazeCanvas.width = M; mazeCanvas.height = M;
+  mazeCanvas = document.createElement('canvas'); mazeCanvas.width = M; mazeCanvas.height = M;
   const c = mazeCanvas.getContext('2d');
-  c.fillStyle = '#2b2f3a'; c.fillRect(0, 0, M, M);
+  c.fillStyle = '#20232c'; c.fillRect(0, 0, M, M);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     if (grid[y][x] === '1') {
       c.fillStyle = '#6b7280'; c.fillRect(x * T, y * T, T, T);
       c.fillStyle = '#4b5563'; c.fillRect(x * T + 4, y * T + 4, T - 8, T - 8);
+      c.fillStyle = '#374151'; c.fillRect(x * T + 4, y * T + T - 10, T - 8, 6);
     } else {
-      c.fillStyle = ((x + y) % 2) ? '#c9b99a' : '#bfae8e';
-      c.fillRect(x * T, y * T, T, T);
+      c.fillStyle = ((x + y) % 2) ? '#c9b99a' : '#bfae8e'; c.fillRect(x * T, y * T, T, T);
     }
   }
 }
 
-// ---- 描画 ----
-let lastT = performance.now();
-function lerpTo(cur, tgt, k) { cur.x += (tgt.x - cur.x) * k; cur.y += (tgt.y - cur.y) * k; }
+// ---------- 描画ヘルパ ----------
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function smooth(cur, tgt, k) { cur.x += (tgt.x - cur.x) * k; cur.y += (tgt.y - cur.y) * k; }
 
+function metalPanel(x, y, w, h) {
+  const g = ctx.createLinearGradient(x, 0, x + w, 0);
+  g.addColorStop(0, '#6b7280'); g.addColorStop(0.45, '#d1d5db'); g.addColorStop(0.55, '#9ca3af'); g.addColorStop(1, '#4b5563');
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = 'rgba(0,0,0,.25)';
+  for (let i = 1; i < 4; i++) ctx.fillRect(x + (w * i) / 4 - 1, y + 4, 2, h - 8);
+}
+
+function drawElevator(el, now) {
+  const T = world.T, ex = world.elev.tx * T, ey = world.elev.ty * T;
+  // 内部（奥の明るい箱）
+  const ig = ctx.createLinearGradient(ex, ey, ex, ey + T);
+  ig.addColorStop(0, '#fff7d6'); ig.addColorStop(1, '#b59a63');
+  ctx.fillStyle = ig; ctx.fillRect(ex, ey, T, T);
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.fillRect(ex, ey, 6, T); ctx.fillRect(ex + T - 6, ey, 6, T);
+  ctx.fillStyle = '#7c6a43'; ctx.fillRect(ex + 10, ey + T / 2, T - 20, 4); // 手すり
+  // 扉（左右にスライドして壁へ収納される）
+  const half = T / 2, off = el.door * half;
+  ctx.save(); ctx.beginPath(); ctx.rect(ex, ey, T, T); ctx.clip();
+  metalPanel(ex - off, ey, half, T);
+  metalPanel(ex + half + off, ey, half, T);
+  // 閉まりかけの危険ストライプ
+  if (el.open && el.left < 8 && el.door < 0.9) {
+    ctx.fillStyle = Math.floor(now / 150) % 2 ? '#facc15' : '#111';
+    ctx.fillRect(ex - off + half - 5, ey, 5, T); ctx.fillRect(ex + half + off, ey, 5, T);
+  }
+  ctx.restore();
+  // 枠
+  ctx.strokeStyle = '#111827'; ctx.lineWidth = 6; ctx.strokeRect(ex + 3, ey + 3, T - 6, T - 6);
+  // ランプ
+  const warn = el.open && el.left < 3, mid = el.open && el.left < 8;
+  const blink = Math.floor(now / (warn ? 90 : 220)) % 2;
+  ctx.fillStyle = !el.open ? '#7f1d1d' : warn ? (blink ? '#ef4444' : '#450a0a') : mid ? (blink ? '#f59e0b' : '#78350f') : '#22c55e';
+  ctx.fillRect(ex + T / 2 - 16, ey + 8, 32, 8);
+  // カウントダウン表示
+  ctx.fillStyle = el.open ? (warn ? '#f87171' : '#fde68a') : '#9ca3af';
+  ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(el.open ? 'EXIT ' + Math.ceil(el.left) : 'EXIT', ex + T / 2, ey - 6);
+}
+
+function drawActor(e, v, alpha, isMe, now) {
+  const isOni = e.role === 'oni';
+  const r = isOni ? 22 : 18;
+  ctx.save(); ctx.globalAlpha = alpha;
+  if (!e.al && !isOni) {              // 捕まった逃げ側
+    ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(v.x, v.y, r, 0, 7); ctx.stroke();
+    ctx.restore(); return;
+  }
+  if (e.inv && Math.floor(now / 100) % 2) ctx.globalAlpha *= 0.35;
+  if (isOni) {
+    ctx.fillStyle = e.st ? '#9ca3af' : '#dc2626';
+    ctx.beginPath(); ctx.arc(v.x, v.y, r, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(v.x - 7, v.y - 4, 4.5, 0, 7); ctx.arc(v.x + 7, v.y - 4, 4.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(v.x - 7, v.y - 4, 2, 0, 7); ctx.arc(v.x + 7, v.y - 4, 2, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.moveTo(v.x - 13, v.y - 16); ctx.lineTo(v.x - 8, v.y - 32); ctx.lineTo(v.x - 3, v.y - 19); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(v.x + 13, v.y - 16); ctx.lineTo(v.x + 8, v.y - 32); ctx.lineTo(v.x + 3, v.y - 19); ctx.fill();
+  } else {
+    ctx.fillStyle = isMe ? '#3b82f6' : '#22d3ee';
+    ctx.beginPath(); ctx.arc(v.x, v.y, r, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+    if (e.e) { ctx.fillStyle = '#f9a8d4'; ctx.fillRect(v.x - 10, v.y - 34, 20, 12); ctx.fillStyle = '#3b82f6'; ctx.fillRect(v.x - 10, v.y - 34, 6, 12); }
+  }
+  ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(e.n || '', v.x, v.y + r + 15);
+  ctx.restore();
+}
+
+// ---------- メインループ ----------
+let lastT = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min((now - lastT) / 1000, 0.1); lastT = now;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
-  if (!world || !state) return;
+  if (!inGame || !world || !state) return;
 
   const k = 1 - Math.exp(-dt * 30);
-  lerpTo(view.p, state.p, k);
-  if (state.o) { if (!view.o) view.o = { x: state.o.x, y: state.o.y }; lerpTo(view.o, state.o, k); }
+  if (!camV) camV = { x: state.cam.x, y: state.cam.y };
+  if (!meV) meV = { x: state.me.x, y: state.me.y };
+  smooth(camV, state.cam, k); smooth(meV, state.me, k);
 
-  const { T, elev, map: M } = world;
+  const seen = {};
+  for (const e of state.ents) {
+    seen[e.id] = 1;
+    if (!views[e.id]) views[e.id] = { x: e.x, y: e.y };
+    smooth(views[e.id], e, k);
+  }
+  for (const id in views) if (!seen[id]) delete views[id];
+
+  const el = state.el, T = world.T, Z = cfg.zoom;
+
+  // 効果音
+  if (el.open && !prevOpen) beep(880, 0.25, 0.08, 'sine');
+  if (!el.open && prevOpen) beep(80, 0.5, 0.2, 'sawtooth');
+  prevOpen = el.open;
+  if (el.open && el.left <= CLOSE_PHASE()) {
+    const sec = Math.ceil(el.left);
+    if (sec !== lastSec) { lastSec = sec; beep(450 + (8 - sec) * 90, 0.12, 0.07); }
+  } else lastSec = -1;
+
+  // 画面シェイク（扉が閉まる直前、所持者に強く）
+  const danger = el.open && el.left < 4 ? (4 - el.left) / 4 : 0;
+  shake = danger * (state.me.e ? 4 : 1.5);
+  const sx = shake ? (Math.random() - 0.5) * shake * 2 : 0, sy = shake ? (Math.random() - 0.5) * shake * 2 : 0;
+
   ctx.save();
-  ctx.translate(cv.width / 2, cv.height / 2);
-  ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
-  ctx.translate(-view.p.x, -view.p.y);
-
+  ctx.translate(cv.width / 2 + sx, cv.height / 2 + sy);
+  ctx.scale(Z, Z);
+  ctx.translate(-camV.x, -camV.y);
   ctx.drawImage(mazeCanvas, 0, 0);
+  drawElevator(el, now);
 
-  // エレベーター
-  const ex = elev.tx * T, ey = elev.ty * T;
-  ctx.fillStyle = state.el.open ? '#22c55e' : '#7f1d1d';
-  ctx.fillRect(ex, ey, T, T);
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(state.el.open ? 'OPEN' : 'CLOSED', ex + T / 2, ey + T / 2 + 6);
-
-  // 消しゴム（未所持時）
   if (!state.er.c) {
     ctx.save(); ctx.translate(state.er.x, state.er.y);
+    ctx.shadowColor = '#f9a8d4'; ctx.shadowBlur = 14;
     ctx.fillStyle = '#f9a8d4'; ctx.fillRect(-16, -10, 32, 20);
     ctx.fillStyle = '#3b82f6'; ctx.fillRect(-16, -10, 10, 20);
     ctx.restore();
   }
 
-  // 鬼
-  if (state.o && view.o) {
-    ctx.fillStyle = state.o.st ? '#9ca3af' : '#dc2626';
-    ctx.beginPath(); ctx.arc(view.o.x, view.o.y, 24, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(view.o.x - 8, view.o.y - 5, 5, 0, 7); ctx.arc(view.o.x + 8, view.o.y - 5, 5, 0, 7); ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(view.o.x - 8, view.o.y - 5, 2, 0, 7); ctx.arc(view.o.x + 8, view.o.y - 5, 2, 0, 7); ctx.fill();
-    ctx.fillStyle = '#fff'; // 角
-    ctx.beginPath(); ctx.moveTo(view.o.x - 14, view.o.y - 18); ctx.lineTo(view.o.x - 8, view.o.y - 34); ctx.lineTo(view.o.x - 3, view.o.y - 21); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(view.o.x + 14, view.o.y - 18); ctx.lineTo(view.o.x + 8, view.o.y - 34); ctx.lineTo(view.o.x + 3, view.o.y - 21); ctx.fill();
-  }
-
-  // プレイヤー
-  if (!state.p.inv || Math.floor(now / 100) % 2 === 0) {
-    ctx.fillStyle = '#3b82f6';
-    ctx.beginPath(); ctx.arc(view.p.x, view.p.y, 20, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
-    if (state.p.e) {
-      ctx.fillStyle = '#f9a8d4'; ctx.fillRect(view.p.x - 10, view.p.y - 36, 20, 12);
+  const see = myRole === 'oni' ? cfg.seeR.oni : cfg.seeR.runner;
+  for (const e of state.ents) {
+    const v = views[e.id];
+    let a = 1;
+    if (e.role !== myRole) {          // 敵は暗がりに溶ける
+      const d = Math.hypot(v.x - camV.x, v.y - camV.y);
+      a = clamp((see * 0.98 - d) / (see * 0.45), 0, 1);
+      if (a <= 0.02) continue;
     }
+    drawActor(e, v, a, false, now);
   }
-  ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(myName, view.p.x, view.p.y + 38);
+  if (state.me.al || myRole === 'oni') {
+    drawActor({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, n: myName }, meV, 1, true, now);
+  }
   ctx.restore();
 
-  // 暗闇（視界の恐怖感）
-  const r = Math.max(cv.width, cv.height) * 0.55;
-  const grd = ctx.createRadialGradient(cv.width / 2, cv.height / 2, r * 0.25, cv.width / 2, cv.height / 2, r);
-  grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,0.88)');
+  // 暗闇（自分の周囲だけ照らす）
+  const cx = cv.width / 2 + sx, cy = cv.height / 2 + sy;
+  const R = cfg.lightR[myRole] * Z * (1 + Math.sin(now / 400) * 0.015);
+  const grd = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R);
+  grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(0.65, 'rgba(0,0,0,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0.94)');
   ctx.fillStyle = grd; ctx.fillRect(0, 0, cv.width, cv.height);
 
-  drawMini(M);
+  // エレベーターの光（暗闇越しに遠くからも見える灯台）
+  if (el.open) {
+    const gx = (world.elev.tx * T + T / 2 - camV.x) * Z + cx, gy = (world.elev.ty * T + T / 2 - camV.y) * Z + cy;
+    const warn = el.left < 3, mid = el.left < 8;
+    const flick = warn ? (Math.floor(now / 90) % 2 ? 1 : 0.35) : mid ? (Math.floor(now / 220) % 2 ? 1 : 0.6) : 1;
+    const col = warn ? '255,70,70' : mid ? '255,190,60' : '110,255,160';
+    const gr = ctx.createRadialGradient(gx, gy, 0, gx, gy, 200 * Z);
+    gr.addColorStop(0, 'rgba(' + col + ',' + (0.55 * el.door * flick) + ')'); gr.addColorStop(1, 'rgba(' + col + ',0)');
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(0, 0, cv.width, cv.height); ctx.restore();
+  }
+  // 危険時の赤ビネット
+  if (danger > 0 && state.me.e) {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 80);
+    const vg = ctx.createRadialGradient(cx, cy, Math.min(cv.width, cv.height) * 0.3, cx, cy, Math.max(cv.width, cv.height) * 0.7);
+    vg.addColorStop(0, 'rgba(255,0,0,0)'); vg.addColorStop(1, 'rgba(255,0,0,' + (0.35 * danger * (0.5 + pulse)) + ')');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, cv.width, cv.height);
+  }
 
-  // HUD
+  drawMini(now);
+  updateHud();
+}
+function CLOSE_PHASE() { return 8; }
+
+function drawMini(now) {
+  const S = mini.width, M = world.map, sc = S / M, T = world.T;
+  mctx.clearRect(0, 0, S, S);
+  mctx.globalAlpha = 0.85; mctx.drawImage(mazeCanvas, 0, 0, S, S); mctx.globalAlpha = 1;
   const el = state.el;
-  hud.innerHTML = '消しゴム：' + (state.p.e ? '<b style="color:#f9a8d4">所持中！</b>' : (state.er.c ? '' : '未取得')) +
-    '<br>エレベーター：' + (el.open ? '<b style="color:#4ade80">OPEN 残り ' + el.left.toFixed(1) + '秒</b>' : '<span style="color:#f87171">CLOSED</span>');
+  mctx.fillStyle = el.open ? '#22c55e' : '#ef4444';
+  mctx.fillRect(world.elev.tx * T * sc, world.elev.ty * T * sc, T * sc, T * sc);
+  if (!state.er.c) { mctx.fillStyle = '#facc15'; mctx.beginPath(); mctx.arc(state.er.x * sc, state.er.y * sc, 4, 0, 7); mctx.fill(); }
+  // 味方のみ表示（鬼は逃げ側のミニマップに一切映さない）
+  for (const e of state.ents) {
+    if (e.role !== myRole || e.al === false) continue;
+    mctx.fillStyle = myRole === 'oni' ? '#f87171' : '#22d3ee';
+    mctx.beginPath(); mctx.arc(e.x * sc, e.y * sc, 3, 0, 7); mctx.fill();
+  }
+  if (state.me.al || myRole === 'oni') {
+    mctx.fillStyle = myRole === 'oni' ? '#ef4444' : '#3b82f6';
+    mctx.beginPath(); mctx.arc(meV.x * sc, meV.y * sc, 4, 0, 7); mctx.fill();
+    mctx.strokeStyle = '#fff'; mctx.lineWidth = 1; mctx.stroke();
+  }
+  // 鬼側だけ：消しゴム所持者の位置が定期的にパルスで分かる
+  if (state.ping) {
+    const p = (now % 600) / 600;
+    mctx.strokeStyle = 'rgba(251,191,36,' + (1 - p) + ')'; mctx.lineWidth = 2;
+    mctx.beginPath(); mctx.arc(state.ping.x * sc, state.ping.y * sc, 4 + p * 12, 0, 7); mctx.stroke();
+  }
 }
 
-function drawMini(M) {
-  const S = mini.width, sc = S / M;
-  mctx.clearRect(0, 0, S, S);
-  mctx.drawImage(mazeCanvas, 0, 0, S, S);
-  const { T, elev } = world;
-  mctx.fillStyle = state.el.open ? '#22c55e' : '#ef4444';
-  mctx.fillRect(elev.tx * T * sc, elev.ty * T * sc, T * sc, T * sc);
-  if (!state.er.c) { mctx.fillStyle = '#facc15'; mctx.beginPath(); mctx.arc(state.er.x * sc, state.er.y * sc, 5, 0, 7); mctx.fill(); }
-  mctx.fillStyle = '#3b82f6'; mctx.beginPath(); mctx.arc(view.p.x * sc, view.p.y * sc, 4, 0, 7); mctx.fill();
-  // ※鬼はミニマップに描画しない仕様
+function updateHud() {
+  const s = state, el = s.el;
+  const t = Math.max(0, Math.ceil(s.t)), mm = Math.floor(t / 60), ss = String(t % 60).padStart(2, '0');
+  let h = '<b style="color:' + (myRole === 'oni' ? '#f87171' : '#60a5fa') + '">' + (myRole === 'oni' ? '👹 鬼側' : '🏃 逃げ側') + '</b> 残り ' + mm + ':' + ss;
+  h += '<br>生存している逃げ側：' + s.n;
+  h += '<br>消しゴム：' + (s.me.e ? '<b style="color:#f9a8d4">所持中！</b>' : s.er.c ? '誰かが所持' : '最奥にあり');
+  h += '<br>エレベーター：' + (el.open ? '<b style="color:' + (el.left < 3 ? '#f87171' : el.left < 8 ? '#fbbf24' : '#4ade80') + '">OPEN 残り ' + el.left.toFixed(1) + '秒</b>' : '<span style="color:#f87171">CLOSED</span>');
+  hud.innerHTML = h;
+  const b = $('banner');
+  if (myRole === 'runner' && !s.me.al && s.s === 'playing') { b.style.display = 'block'; b.textContent = '捕まった…仲間を観戦中'; }
+  else if (myRole === 'oni' && s.me.st && s.s === 'playing') { b.style.display = 'block'; b.textContent = '硬直中…'; b.style.color = '#d1d5db'; }
+  else b.style.display = 'none';
 }
 requestAnimationFrame(frame);
 </script>
 </body>
 </html>
-```[cite: 5]
