@@ -95,6 +95,7 @@
 <div id="hud"></div>
 <div id="banner"></div>
 <button class="btn red" id="placeBtn" style="font-size:22px;padding:16px 34px">📍 ここに消しゴムを設置 (SPACE)</button>
+<button class="btn yellow" id="chestBtn" style="position:fixed;bottom:90px;left:50%;transform:translateX(-50%);display:none;z-index:4;font-size:22px;padding:16px 34px">🎁 宝箱を開ける (SPACE)</button>
 <button class="btn blue" id="itemBtn">⚡ アイテム使用 (Q)</button>
 <div id="toast"></div>
 
@@ -163,16 +164,15 @@ const mini = $('mini'), mctx = mini.getContext('2d');
 const hud = $('hud');
 
 let world = null, cfg = null, mazeCanvas = null, state = null, inGame = false;
-let myRole = 'runner', myName = '', mySkin = 'default', lobbyData = null, TH = 0;
+let myRole = 'runner', myName = '', mySkin = 'default', lobbyData = null, TH = 0, isSoloGame = false;
 let views = {}, camV = null, meV = null, ended = false;
-let prevOpen = false, lastSec = -1;
+let prevOpen = false, lastSec = -1, mapOpen = false;
 
 function resize() { cv.width = innerWidth; cv.height = innerHeight; }
 addEventListener('resize', resize); resize();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const show = (id, on) => { $(id).style.display = on ? 'flex' : 'none'; };
 
-// ---------- スキン選択 ----------
 let curSkin = 'default';
 document.querySelectorAll('.skinbtn').forEach(b => {
   b.onclick = () => {
@@ -183,7 +183,6 @@ document.querySelectorAll('.skinbtn').forEach(b => {
   };
 });
 
-// ---------- サウンド ----------
 let AC = null;
 function beep(f, d, v, type) {
   if (!AC) return;
@@ -194,7 +193,6 @@ function beep(f, d, v, type) {
 }
 function initAudio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
 
-// ---------- スタート画面 ----------
 try { $('name').value = localStorage.getItem('pname') || ''; } catch (e) {}
 function nm() { const v = $('name').value.trim(); try { localStorage.setItem('pname', v); } catch (e) {} return v; }
 $('btnCreate').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('create', { name: nm(), skin: curSkin }); };
@@ -204,7 +202,6 @@ $('code').addEventListener('input', () => { $('code').value = $('code').value.re
 $('code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnJoin').click(); });
 socket.on('errmsg', (m) => { $('err').textContent = m; });
 
-// ---------- ロビー ----------
 const roleLabel = { auto: 'おまかせ', runner: '逃げ側', oni: '鬼側' };
 const roleEmoji = { auto: '🎲', runner: '🏃', oni: '👹' };
 socket.on('lobby', (d) => {
@@ -213,6 +210,10 @@ socket.on('lobby', (d) => {
   if (d.state === 'lobby') { inGame = false; hideGameUI(); show('result', false); }
   if (!inGame) { show('title', false); show('lobby', true); renderLobby(); }
 });
+socket.on('toTitle', () => {
+  inGame = false; hideGameUI(); show('result', false); show('lobby', false); show('title', true);
+});
+
 function renderLobby() {
   const d = lobbyData, me = d.players.find((p) => p.id === d.you) || { name: '', role: 'auto' };
   $('codeNum').textContent = d.code; $('codeBig').textContent = d.code;
@@ -235,7 +236,10 @@ function renderLobby() {
 document.querySelectorAll('#lobby [data-role]').forEach((b) => b.onclick = () => socket.emit('setRole', b.dataset.role));
 $('start').onclick = () => { initAudio(); socket.emit('start'); };
 $('leave').onclick = () => { socket.emit('leave'); lobbyData = null; show('lobby', false); show('title', true); };
-$('toLobbyBtn').onclick = () => { socket.emit('leave'); show('result', false); show('lobby', true); };
+$('toLobbyBtn').onclick = () => {
+  if (isSoloGame) { show('result', false); show('title', true); }
+  else { socket.emit('leave'); show('result', false); show('lobby', true); }
+};
 $('codePill').onclick = () => show('codeModal', true);
 $('codeModal').onclick = () => show('codeModal', false);
 $('copyBtn').onclick = (e) => {
@@ -243,11 +247,10 @@ $('copyBtn').onclick = (e) => {
   const t = lobbyData ? lobbyData.code : '';
   try { navigator.clipboard.writeText(t); $('copyBtn').textContent = 'コピーした！'; setTimeout(() => $('copyBtn').textContent = 'コードをコピー', 1500); } catch (er) {}
 };
-function hideGameUI() { mini.style.display = 'none'; hud.style.display = 'none'; $('banner').style.display = 'none'; $('placeBtn').style.display = 'none'; $('itemBtn').style.display = 'none'; }
+function hideGameUI() { mini.style.display = 'none'; hud.style.display = 'none'; $('banner').style.display = 'none'; $('placeBtn').style.display = 'none'; $('chestBtn').style.display = 'none'; $('itemBtn').style.display = 'none'; }
 
-// ---------- ゲーム開始 ----------
 socket.on('init', (w) => {
-  world = w; cfg = w.cfg; myRole = w.role; myName = w.name; TH = (2 - w.side) * Math.PI / 2;
+  world = w; cfg = w.cfg; myRole = w.role; myName = w.name; isSoloGame = !!w.isSolo; TH = (2 - w.side) * Math.PI / 2;
   buildMaze(); state = null; views = {}; camV = null; meV = null; prevOpen = false; lastSec = -1; ended = false;
   for (const k in keys) keys[k] = 0;
   inGame = true;
@@ -272,13 +275,15 @@ socket.on('state', (s) => {
     $('resTitle').style.color = iWin ? '#4ade80' : '#f87171';
     $('resMsg').textContent = s.s === 'runwin' ? (s.slide < 2 ? 'ギリギリで扉の隙間に滑り込んだ！（残り ' + s.slide.toFixed(1) + ' 秒）' : '消しゴムを持って脱出成功！')
       : s.s === 'oniwin' ? '逃げ側は全員捕まった。' : '時間切れ。逃げ切れなかった。';
+    if (isSoloGame) $('toLobbyBtn').textContent = '🏠 タイトルに戻る';
+    else $('toLobbyBtn').textContent = '🏠 ロビーに戻る';
     show('result', true);
   }
 });
 $('placeBtn').onclick = () => socket.emit('place');
+$('chestBtn').onclick = () => socket.emit('interactChest');
 $('itemBtn').onclick = () => socket.emit('useItem');
 
-// ---------- 入力 ----------
 const keys = { u: 0, d: 0, l: 0, r: 0 };
 const kmap = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
 function sendInput() {
@@ -289,7 +294,13 @@ function sendInput() {
 }
 addEventListener('keydown', (e) => {
   if (!inGame) return;
-  if (e.code === 'Space') { e.preventDefault(); socket.emit('place'); return; }
+  if (e.code === 'KeyM') { mapOpen = !mapOpen; return; }
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (state && state.ph === 'place') socket.emit('place');
+    else socket.emit('interactChest');
+    return;
+  }
   if (e.code === 'KeyQ') { e.preventDefault(); socket.emit('useItem'); return; }
   const k = kmap[e.code]; if (!k) return;
   e.preventDefault();
@@ -302,7 +313,6 @@ addEventListener('keyup', (e) => {
 });
 addEventListener('blur', () => { for (const k in keys) keys[k] = 0; if (inGame) sendInput(); });
 
-// ---------- 迷路の事前描画 ----------
 function buildMaze() {
   const { grid, T, N, map: M } = world;
   mazeCanvas = document.createElement('canvas'); mazeCanvas.width = M; mazeCanvas.height = M;
@@ -318,7 +328,6 @@ function buildMaze() {
   }
 }
 
-// ---------- 描画ヘルパ ----------
 function smooth(cur, tgt, k) { cur.x += (tgt.x - cur.x) * k; cur.y += (tgt.y - cur.y) * k; }
 let SX = 0, SY = 0;
 function withWorld(fn) {
@@ -372,13 +381,8 @@ function drawElevator(i, el, now, owned, showOpen) {
 
 function bodyPath(isOni, r, skin) {
   ctx.beginPath();
-  if (skin === 'robot') {
-    ctx.rect(-r, -r, r * 2, r * 2);
-  } else if (skin === 'ninja') {
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-  } else {
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-  }
+  if (skin === 'robot') { ctx.rect(-r, -r, r * 2, r * 2); }
+  else { ctx.arc(0, 0, r, 0, Math.PI * 2); }
   if (isOni) {
     ctx.moveTo(-13, -16); ctx.lineTo(-8, -32); ctx.lineTo(-3, -19); ctx.closePath();
     ctx.moveTo(13, -16); ctx.lineTo(8, -32); ctx.lineTo(3, -19); ctx.closePath();
@@ -419,7 +423,6 @@ function drawSil(e, v, a, now) {
   ctx.restore();
 }
 
-// ---------- メインループ ----------
 let lastT = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
@@ -454,18 +457,19 @@ function frame(now) {
       const owned = i === state.side;
       drawElevator(i, el, now, owned, myRole === 'oni' || owned);
     }
-    // ワープ床
     if (state.warps) {
       for (const w of state.warps) {
         ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(w.x, w.y, 16, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#e879f9'; ctx.lineWidth = 3; ctx.stroke();
       }
     }
-    // 宝箱
+    // 大きくなった宝箱 (36x36)
     if (state.chests) {
       for (const ch of state.chests) {
-        ctx.fillStyle = '#fbbf24'; ctx.fillRect(ch.x - 12, ch.y - 10, 24, 20);
-        ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2; ctx.strokeRect(ch.x - 12, ch.y - 10, 24, 20);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(ch.x - 18, ch.y - 18, 36, 36);
+        ctx.strokeStyle = '#d97706'; ctx.lineWidth = 3; ctx.strokeRect(ch.x - 18, ch.y - 18, 36, 36);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('🎁', ch.x, ch.y + 4);
       }
     }
     if (state.er && !state.er.c) {
@@ -499,24 +503,15 @@ function frame(now) {
       const a = 0.62 * up * down;
       if (a > 0.02) drawSil(e, v, a, now);
     }
-    if (state.er && !state.er.c) {
-      const d = Math.hypot(state.er.x - camV.x, state.er.y - camV.y);
-      if (d > lightR * 0.7) {
-        ctx.save(); ctx.translate(state.er.x, state.er.y);
-        ctx.globalAlpha = 0.35 + 0.25 * Math.sin(now / 200);
-        ctx.fillStyle = '#f9a8d4'; ctx.shadowColor = '#f9a8d4'; ctx.shadowBlur = 16;
-        ctx.beginPath(); ctx.arc(0, 0, 4, 0, 7); ctx.fill(); ctx.restore();
-      }
-    }
   });
 
-  // ===== 消しゴムの方向を示す矢印 (画面端インジケーター) =====
+  // 消しゴムの方向を示す三角形インジケーター
   if (myRole === 'runner' && state.er && !state.er.c && state.er.x != null) {
     const p = w2s(state.er.x, state.er.y);
     if (p.x < 40 || p.x > cv.width - 40 || p.y < 40 || p.y > cv.height - 40) {
       const ang = Math.atan2(p.y - cy, p.x - cx);
       ctx.save(); ctx.translate(cx + Math.cos(ang) * 140, cy + Math.sin(ang) * 140); ctx.rotate(ang);
-      ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -11); ctx.lineTo(-10, 11); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-12, -13); ctx.lineTo(-12, 13); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
   }
@@ -537,6 +532,19 @@ function frame(now) {
 
   drawMini(now);
   updateHud();
+
+  // Mキーによる拡大マップ描画
+  if (mapOpen) {
+    ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, cv.width, cv.height);
+    const mapSize = Math.min(cv.width, cv.height) * 0.75;
+    const mx = (cv.width - mapSize) / 2, my = (cv.height - mapSize) / 2;
+    ctx.save(); ctx.translate(mx, mapSize / 2 + my);
+    ctx.drawImage(mazeCanvas, 0, 0, world.map, world.map, 0, -mapSize/2, mapSize, mapSize);
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 4; ctx.strokeRect(0, -mapSize/2, mapSize, mapSize);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🗺 全体マップ (Mキーで閉じる)', mapSize / 2, -mapSize / 2 - 16);
+    ctx.restore();
+  }
 }
 
 function drawMini(now) {
@@ -544,13 +552,24 @@ function drawMini(now) {
   mctx.clearRect(0, 0, S, S);
   mctx.save(); mctx.translate(S / 2, S / 2); mctx.rotate(TH); mctx.translate(-S / 2, -S / 2);
   mctx.globalAlpha = 0.85; mctx.drawImage(mazeCanvas, 0, 0, S, S); mctx.globalAlpha = 1;
+
   for (let i = 0; i < 4; i++) {
     const E = world.elevs[i], owned = i === state.side;
     if (myRole === 'runner' && !owned) mctx.fillStyle = '#374151';
     else mctx.fillStyle = el.open ? '#22c55e' : (owned ? '#22d3ee' : '#ef4444');
     mctx.fillRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc);
-    if (owned) { mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5; mctx.strokeRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc); }
   }
+
+  // 鬼の場所を示す大きめの円（正確な位置ではなくエリア表示）
+  if (myRole === 'runner' && state.oniAreas) {
+    for (const area of state.oniAreas) {
+      mctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; mctx.lineWidth = 2;
+      mctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+      mctx.beginPath(); mctx.arc(area.x * sc, area.y * sc, 35, 0, Math.PI * 2);
+      mctx.fill(); mctx.stroke();
+    }
+  }
+
   if (myRole === 'oni' && state.er && !state.er.c && state.er.x != null) {
     mctx.fillStyle = '#facc15'; mctx.beginPath(); mctx.arc(state.er.x * sc, state.er.y * sc, 4, 0, 7); mctx.fill();
   }
@@ -569,8 +588,8 @@ function drawMini(now) {
 
 function updateHud() {
   const s = state, el = s.el;
-  const b = $('banner'), pb = $('placeBtn'), ib = $('itemBtn');
-  pb.style.display = 'none'; ib.style.display = 'none';
+  const b = $('banner'), pb = $('placeBtn'), cb = $('chestBtn'), ib = $('itemBtn');
+  pb.style.display = 'none'; cb.style.display = 'none'; ib.style.display = 'none';
 
   if (s.ph === 'place' && s.s === 'playing') {
     const sec = Math.ceil(s.pl);
@@ -581,7 +600,18 @@ function updateHud() {
     } else b.innerHTML = '鬼が消しゴムを隠しています（残り ' + sec + '秒）<br><span style="font-size:15px;color:#fff">スタートまで待機中…</span>';
   } else if (myRole === 'runner' && !s.me.al && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#fca5a5'; b.textContent = '捕まった…仲間を観戦中'; }
   else if (myRole === 'oni' && s.me.st && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = '硬直中…'; }
-  else b.style.display = 'none';
+  else {
+    b.style.display = 'none';
+    // 宝箱の近くにいるか判定
+    if (myRole === 'runner' && s.me.al && !s.me.item && s.chests) {
+      for (const ch of s.chests) {
+        if (Math.hypot(s.me.x - ch.x, s.me.y - ch.y) < 55) {
+          cb.style.display = 'block';
+          break;
+        }
+      }
+    }
+  }
 
   if (s.me.item && s.s === 'playing') {
     ib.style.display = 'block';
@@ -595,6 +625,7 @@ function updateHud() {
   if (myRole === 'runner') h += '<br>消しゴム：' + (s.me.e ? '<b style="color:#f9a8d4">所持中！自分のエレベーターへ</b>' : s.er && s.er.c ? '誰かが所持' : '矢印の方向へ探索せよ');
   else h += '<br>消しゴム：' + (!s.placed ? '未設置' : s.er && s.er.c ? '奪われた！' : '設置完了');
   h += '<br>エレベーター：' + (el.open ? '<b style="color:' + (el.left < 3 ? '#f87171' : el.left < 8 ? '#fbbf24' : '#4ade80') + '">OPEN 残り ' + el.left.toFixed(1) + '秒</b>' : '<span style="color:#f87171">CLOSED</span>');
+  h += '<br><span style="font-size:12px;color:#ccc">🗺 [M]キーで全体マップ表示</span>';
   hud.innerHTML = h;
 }
 requestAnimationFrame(frame);
