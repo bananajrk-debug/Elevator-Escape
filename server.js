@@ -25,7 +25,7 @@ const CFG = {
 const RUNNER_R = 18, ONI_R = 22;
 const SPEED = { runner: 236, carrier: 214, oni: 230, cpu: 204, cpuAngry: 224 };
 const ELEV_OPEN_SEC = 20, CLOSE_PHASE = 8, DOOR_PASS = 0.15;
-const INVULN = 3, STUN = 2, START_STUN = 2, MATCH_TIME = 300;
+const INVULN = 3, STUN_DURATION = 8, START_STUN = 2, MATCH_TIME = 300;
 const PLACE_TIME = 30, PLACE_MIN = 300, HINT_AFTER = 45;
 const MAX_PLAYERS = 8;
 
@@ -181,10 +181,12 @@ function addEnt(g, id, name, role, cpu, side, skin) {
   const k = g.ents.filter((e) => e.side === side).length;
   const off = [0, 16, -16][k % 3];
   const px = E.dy !== 0 ? 1 : 0, py = E.dx !== 0 ? 1 : 0;
+  const spawnX = (E.tx + E.dx) * T + T / 2 + px * off;
+  const spawnY = (E.ty + E.dy) * T + T / 2 + py * off;
   g.ents.push({
     id, name, role, cpu, side, skin: skin || 'default',
-    x: (E.tx + E.dx) * T + T / 2 + px * off, y: (E.ty + E.dy) * T + T / 2 + py * off,
-    input: { u: 0, d: 0, l: 0, r: 0 }, alive: true, hasEraser: false,
+    x: spawnX, y: spawnY, spawnX, spawnY,
+    input: { u: 0, d: 0, l: 0, r: 0 }, alive: true, hp: 100, hasEraser: false,
     invuln: 0, stun: 0, speedBoost: 0, invisible: 0, item: null, next: null, repath: 0
   });
 }
@@ -202,7 +204,7 @@ function startGame(room) {
   const ang = Math.random() * Math.PI * 2, mag = 40 + Math.random() * 80;
   const g = {
     room, grid: generateMaze(), status: 'playing', phase: 'place', placeLeft: PLACE_TIME,
-    time: MATCH_TIME, playT: 0, endAt: 0, pingClock: 0, ents: [], warps: [], chests: [],
+    time: MATCH_TIME, playT: 0, endAt: 0, pingClock: 0, ents: [], warps: [], chests: [], potions: [],
     hintOff: { x: Math.cos(ang) * mag, y: Math.sin(ang) * mag },
     eraser: { x: 0, y: 0, home: { x: 0, y: 0 }, placed: false, carried: false, cool: 0 },
     elev: { open: false, left: 0, door: 0 }
@@ -217,6 +219,12 @@ function startGame(room) {
   g.chests = [
     { x: randomSpot(g).x, y: randomSpot(g).y, opened: false },
     { x: randomSpot(g).x, y: randomSpot(g).y, opened: false }
+  ];
+
+  // 回復薬の配置
+  g.potions = [
+    { x: randomSpot(g).x, y: randomSpot(g).y, taken: false },
+    { x: randomSpot(g).x, y: randomSpot(g).y, taken: false }
   ];
 
   const sides = shuffle([0, 1, 2, 3]);
@@ -344,6 +352,31 @@ function step(g, dt) {
 
   for (const e of g.ents) {
     if (!e.alive) continue;
+
+    // 自動スタングレネード判定（逃げ側が所持・半径3ブロック=240px以内に鬼がいる場合）
+    if (e.role === 'runner' && e.item === 'stun') {
+      for (const o of g.ents) {
+        if (o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - e.x, o.y - e.y) < 240) {
+          e.item = null;
+          o.stun = STUN_DURATION;
+          ev(g, '💫 ' + e.name + ' の近接スタングレネードが自動発動！鬼が8秒間停止！');
+          break;
+        }
+      }
+    }
+
+    // 回復薬の拾い上げ判定
+    if (e.role === 'runner' && e.hp < 100) {
+      for (const pot of g.potions) {
+        if (!pot.taken && Math.hypot(e.x - pot.x, e.y - pot.y) < RUNNER_R + 15) {
+          pot.taken = true;
+          e.hp = Math.min(100, e.hp + 50);
+          io.to(e.id).emit('ev', '🧪 回復薬を飲んで体力が回復した！');
+          break;
+        }
+      }
+    }
+
     if (!e.cpu) {
       if (e.role === 'oni' && e.stun > 0) continue;
       moveByInput(g, e, dt);
@@ -391,15 +424,29 @@ function step(g, dt) {
     const c = elevCenter(r.side);
     if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) { g.status = 'runwin'; g.slide = el.left; return; }
   }
+
+  // 攻撃・ダメージ判定（鬼がヒットすると初期位置へテレポート）
   for (const o of g.ents) {
     if (o.role !== 'oni' || o.stun > 0) continue;
     for (const r of runnersAlive) {
       if (!r.alive || r.invuln > 0 || r.invisible > 0) continue;
       if (Math.hypot(r.x - o.x, r.y - o.y) < RUNNER_R + ONI_R - 4) {
+        r.hp -= 50;
+        r.invuln = INVULN;
+        
+        // 鬼をスポーン位置へ強制送還
+        o.x = o.spawnX; o.y = o.spawnY;
+        o.stun = 1.5; // スポーン復帰時の短い無敵/スタック防止
+
         if (r.hasEraser) {
-          dropEraser(g, r); r.invuln = INVULN; o.stun = STUN;
-          ev(g, '💥 ' + r.name + ' が捕まり消しゴムを落とした！');
-        } else { r.alive = false; ev(g, '☠ ' + r.name + ' が捕まった'); }
+          dropEraser(g, r);
+          ev(g, '💥 ' + r.name + ' が攻撃を受けダメージ！消しゴムを落とした！（鬼は戻された）');
+        } else if (r.hp <= 0) {
+          r.alive = false;
+          ev(g, '☠ ' + r.name + ' が倒された！（鬼は戻された）');
+        } else {
+          ev(g, '💥 ' + r.name + ' がダメージを受けた！残りHP: ' + r.hp + '%（鬼は戻された）');
+        }
         break;
       }
     }
@@ -407,7 +454,6 @@ function step(g, dt) {
   if (!g.ents.some((e) => e.role === 'runner' && e.alive)) g.status = 'oniwin';
 }
 
-// 宝箱を開ける処理
 function openChest(g, player) {
   if (player.role !== 'runner' || player.item || !player.alive) return;
   for (const ch of g.chests) {
@@ -415,8 +461,8 @@ function openChest(g, player) {
       ch.opened = true;
       const items = ['stun', 'speed', 'invis'];
       player.item = items[Math.floor(Math.random() * items.length)];
-      const names = { stun: 'スタングレネード', speed: 'スピードブーツ', invis: '透明化スーツ' };
-      io.to(player.id).emit('ev', '🎁 宝箱を開けて「' + names[player.item] + '」を手に入れた！ (Qキーで使用)');
+      const names = { stun: '自動スタングレネード (近接時8秒停止)', speed: 'スピードブーツ', invis: '透明化スーツ' };
+      io.to(player.id).emit('ev', '🎁 宝箱から「' + names[player.item] + '」を手に入れた！');
       break;
     }
   }
@@ -430,7 +476,7 @@ function snapshot(g, r) {
   for (const e of g.ents) {
     if (e === r) continue;
     if (e.invisible > 0 && e.role !== r.role) continue;
-    const info = { id: e.id, n: e.name, x: e.x, y: e.y, role: e.role, al: e.alive, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, skin: e.skin };
+    const info = { id: e.id, n: e.name, x: e.x, y: e.y, role: e.role, al: e.alive, hp: e.hp, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, skin: e.skin };
     if (e.role === r.role) ents.push(info);
     else if (e.alive && Math.hypot(e.x - ref.x, e.y - ref.y) < ghost && losClear(g, ref.x, ref.y, e.x, e.y)) ents.push(info);
   }
@@ -448,14 +494,13 @@ function snapshot(g, r) {
     if (c) ping = { x: c.x, y: c.y };
   }
   const chests = g.chests.filter((c) => !c.opened).map((c) => ({ x: c.x, y: c.y }));
+  const potions = g.potions.filter((p) => !p.taken).map((p) => ({ x: p.x, y: p.y }));
   const warps = g.warps.map((w) => ({ x: w.x, y: w.y }));
 
-  // 逃げ側用に鬼のおおよそのエリア円（中心から少しずらした位置）を渡す
   let oniAreas = [];
   if (r.role === 'runner') {
     for (const e of g.ents) {
       if (e.role === 'oni' && e.alive) {
-        // 実際の位置からランダムなオフセット（半径100〜180px程度の不確定エリア）
         const seed = Math.floor(g.playT * 2) + e.x;
         const ox = e.x + Math.sin(seed) * 140;
         const oy = e.y + Math.cos(seed) * 140;
@@ -467,8 +512,8 @@ function snapshot(g, r) {
   return {
     s: g.status, ph: g.phase, pl: Math.max(0, g.placeLeft), placed: E.placed,
     t: g.time, slide: g.slide || 0, role: r.role, side: ref.side,
-    me: { x: r.x, y: r.y, al: r.alive, e: r.hasEraser, inv: r.invuln > 0, st: r.stun > 0, item: r.item, speed: r.speedBoost > 0, invis: r.invisible > 0 },
-    cam: { x: ref.x, y: ref.y }, ents, ping, er, hint, chests, warps, oniAreas,
+    me: { x: r.x, y: r.y, al: r.alive, hp: r.hp, e: r.hasEraser, inv: r.invuln > 0, st: r.stun > 0, item: r.item, speed: r.speedBoost > 0, invis: r.invisible > 0 },
+    cam: { x: ref.x, y: ref.y }, ents, ping, er, hint, chests, potions, warps, oniAreas,
     el: { open: g.elev.open, left: g.elev.left, door: g.elev.door },
     n: g.ents.filter((e) => e.role === 'runner' && e.alive).length
   };
@@ -567,21 +612,15 @@ io.on('connection', (socket) => {
     if (!g || g.status !== 'playing') return;
     const e = g.ents.find((x) => x.id === socket.id && x.role === 'runner' && x.alive);
     if (!e || !e.item) return;
-    const item = e.item; e.item = null;
+    const item = e.item;
     if (item === 'speed') {
-      e.speedBoost = 10;
+      e.item = null; e.speedBoost = 10;
       io.to(e.id).emit('ev', '⚡ スピードブーツ発動！移動速度アップ（10秒）');
     } else if (item === 'invis') {
-      e.invisible = 10;
+      e.item = null; e.invisible = 10;
       io.to(e.id).emit('ev', '👻 透明化スーツ発動！姿が消えた（10秒）');
     } else if (item === 'stun') {
-      let hit = false;
-      for (const o of g.ents) {
-        if (o.role === 'oni' && Math.hypot(o.x - e.x, o.y - e.y) < 220) {
-          o.stun = 3.5; hit = true;
-        }
-      }
-      io.to(e.id).emit('ev', hit ? '💫 スタングレネード炸裂！鬼が怯んだ！' : '💫 グネードを投げたが周囲に鬼はいなかった…');
+      io.to(e.id).emit('ev', 'ℹ️ スタングレネードは鬼が半径3ブロック以内に来ると自動発動します！');
     }
   });
   socket.on('leave', () => leaveRoom(socket.id));
