@@ -267,7 +267,7 @@ socket.on('state', (s) => {
   if (!inGame) return;
   TH = (2 - s.side) * Math.PI / 2;
   if (s.s === 'playing') ended = false;
-  if (s.s !== 'playing' && !ended) {
+  if (s.s !== 'playing' && s.s !== 'escaping' && !ended) {
     ended = true;
     const runnerWin = s.s === 'runwin', iWin = (myRole === 'runner') === runnerWin;
     $('resTitle').textContent = iWin ? '勝利！' : '敗北…';
@@ -436,6 +436,40 @@ function frame(now) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
   if (!inGame || !world || !state) return;
 
+  // 脱出演出フェーズ（大画面でのクローズアップ＆閉扉演出）
+  if (state.s === 'escaping') {
+    ctx.fillStyle = '#0a0618'; ctx.fillRect(0, 0, cv.width, cv.height);
+    const cx = cv.width / 2, cy = cv.height / 2;
+    const progress = 1 - (state.escapeTimer / 3.0); // 0.0 -> 1.0
+    const doorWidth = Math.min(cv.width * 0.45, 320);
+    const doorHeight = Math.min(cv.height * 0.65, 480);
+    const closedOffset = (doorWidth / 2) * Math.min(1, progress * 1.3);
+
+    // エレベーター内部の背景
+    ctx.fillStyle = '#222'; ctx.fillRect(cx - doorWidth, cy - doorHeight/2, doorWidth * 2, doorHeight);
+    ctx.fillStyle = '#4ade80'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🚪 ESCAPING...', cx, cy - doorHeight/2 - 20);
+
+    // ドア閉鎖アニメーション（左右から金属ドアが閉まる）
+    metalPanel(cx - doorWidth - closedOffset, cy - doorHeight/2, doorWidth, doorHeight);
+    metalPanel(cx + closedOffset, cy - doorHeight/2, doorWidth, doorHeight);
+
+    // ドアの隙間から見える鬼の恐怖演出
+    if (progress < 0.85) {
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+      ctx.beginPath(); ctx.arc(cx - 15, cy, 6, 0, Math.PI*2); ctx.arc(cx + 15, cy, 6, 0, Math.PI*2); ctx.fill();
+    }
+
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 6; ctx.strokeRect(cx - doorWidth, cy - doorHeight/2, doorWidth * 2, doorHeight);
+
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('ドアが閉まるまで逃げ切れ…！ (残り ' + Math.max(0, state.escapeTimer).toFixed(1) + '秒)', cx, cy + doorHeight/2 + 45);
+
+    drawMini(now);
+    updateHud();
+    return;
+  }
+
   const k = 1 - Math.exp(-dt * 30);
   if (!camV) camV = { x: state.cam.x, y: state.cam.y };
   if (!meV) meV = { x: state.me.x, y: state.me.y };
@@ -518,7 +552,7 @@ function frame(now) {
     }
   });
 
-  // 確実に画面外の消しゴムを指し示す三角形インジケーターの描画
+  // 消しゴムの方向を示す三角形インジケーター
   if (myRole === 'runner' && state.er && !state.er.c && state.er.x != null) {
     const p = w2s(state.er.x, state.er.y);
     if (p.x < 40 || p.x > cv.width - 40 || p.y < 40 || p.y > cv.height - 40) {
@@ -612,6 +646,7 @@ function updateHud() {
     } else b.innerHTML = '鬼が消しゴムを隠しています（残り ' + sec + '秒）<br><span style="font-size:15px;color:#fff">スタートまで待機中…</span>';
   } else if (myRole === 'runner' && !s.me.al && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#fca5a5'; b.textContent = '倒された…仲間を観戦中'; }
   else if (myRole === 'oni' && s.me.st && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = 'スタン・リスポーン中（3秒）…'; }
+  else if (s.s === 'escaping') { b.style.display = 'block'; b.style.color = '#4ade80'; b.textContent = '🚪 エレベーター脱出中…！'; }
   else {
     b.style.display = 'none';
     if (myRole === 'runner' && s.me.al && !s.me.item && s.chests) {
