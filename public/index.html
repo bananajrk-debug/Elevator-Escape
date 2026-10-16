@@ -407,7 +407,6 @@ function drawActor(e, v, alpha, isMe, now) {
   ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(e.n || '', 0, r + 15);
 
-  // 体力バー描画 (逃げ側)
   if (!isOni && e.al) {
     const hpPct = (e.hp || 100) / 100;
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(-18, -r - 12, 36, 6);
@@ -478,7 +477,6 @@ function frame(now) {
         ctx.fillText('🎁', ch.x, ch.y + 4);
       }
     }
-    // 回復薬の描画
     if (state.potions) {
       for (const pot of state.potions) {
         ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(pot.x, pot.y, 14, 0, Math.PI * 2); ctx.fill();
@@ -487,7 +485,7 @@ function frame(now) {
         ctx.fillText('🧪', pot.x, pot.y + 3);
       }
     }
-    if (state.er && !state.er.c) {
+    if (state.er && !state.er.c && state.er.x != null) {
       ctx.save(); ctx.translate(state.er.x, state.er.y); ctx.rotate(-TH);
       ctx.shadowColor = '#f9a8d4'; ctx.shadowBlur = 14;
       ctx.fillStyle = '#f9a8d4'; ctx.fillRect(-16, -10, 32, 20);
@@ -520,7 +518,7 @@ function frame(now) {
     }
   });
 
-  // 消しゴムの方向を示す三角形インジケーター
+  // 確実に画面外の消しゴムを指し示す三角形インジケーターの描画
   if (myRole === 'runner' && state.er && !state.er.c && state.er.x != null) {
     const p = w2s(state.er.x, state.er.y);
     if (p.x < 40 || p.x > cv.width - 40 || p.y < 40 || p.y > cv.height - 40) {
@@ -575,7 +573,6 @@ function drawMini(now) {
     mctx.fillRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc);
   }
 
-  // 鬼のエリア円
   if (myRole === 'runner' && state.oniAreas) {
     for (const area of state.oniAreas) {
       mctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; mctx.lineWidth = 2;
@@ -614,7 +611,7 @@ function updateHud() {
       else b.textContent = '設置完了…スタートまで ' + sec;
     } else b.innerHTML = '鬼が消しゴムを隠しています（残り ' + sec + '秒）<br><span style="font-size:15px;color:#fff">スタートまで待機中…</span>';
   } else if (myRole === 'runner' && !s.me.al && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#fca5a5'; b.textContent = '倒された…仲間を観戦中'; }
-  else if (myRole === 'oni' && s.me.st && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = 'スタン中…'; }
+  else if (myRole === 'oni' && s.me.st && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = 'スタン・リスポーン中（3秒）…'; }
   else {
     b.style.display = 'none';
     if (myRole === 'runner' && s.me.al && !s.me.item && s.chests) {
@@ -637,7 +634,7 @@ function updateHud() {
   let h = '<b style="color:' + (myRole === 'oni' ? '#f87171' : '#60a5fa') + '">' + (myRole === 'oni' ? '👹 鬼側' : '🏃 逃げ側') + '</b> 残り ' + mm + ':' + ss;
   if (myRole === 'runner') h += '<br>HP: <b style="color:' + (s.me.hp > 50 ? '#4ade80' : '#f87171') + '">' + s.me.hp + '%</b>';
   h += '<br>生存中の逃げ側：' + s.n;
-  if (myRole === 'runner') h += '<br>消しゴム：' + (s.me.e ? '<b style="color:#f9a8d4">所持中！自分のエレベーターへ</b>' : s.er && s.er.c ? '誰かが所持' : '矢印の方向へ探索せよ');
+  if (myRole === 'runner') h += '<br>消しゴム：' + (s.me.e ? '<b style="color:#f9a8d4">所持中！自分のエレベーターへ</b>' : s.er && s.er.c ? '誰かが所持' : '画面端の矢印の方向へ探索せよ');
   else h += '<br>消しゴム：' + (!s.placed ? '未設置' : s.er && s.er.c ? '奪われた！' : '設置完了');
   h += '<br>エレベーター：' + (el.open ? '<b style="color:' + (el.left < 3 ? '#f87171' : el.left < 8 ? '#fbbf24' : '#4ade80') + '">OPEN 残り ' + el.left.toFixed(1) + '秒</b>' : '<span style="color:#f87171">CLOSED</span>');
   h += '<br><span style="font-size:12px;color:#ccc">🗺 [M]キーで全体マップ表示</span>';
