@@ -14,6 +14,7 @@
   #toast div { background: rgba(0,0,0,.72); padding: 6px 14px; margin-top: 6px; border-radius: 6px; font-size: 16px; }
   #banner { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 800; text-align: center; text-shadow: 0 0 8px #000; display: none; pointer-events: none; }
   #placeBtn { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); display: none; z-index: 4; }
+  #itemBtn { position: fixed; bottom: 90px; right: 20px; display: none; z-index: 4; font-size: 18px; padding: 14px 22px; }
 
   /* ---------- 共通UI ---------- */
   .overlay { position: fixed; inset: 0; display: none; z-index: 5; }
@@ -44,6 +45,9 @@
   .joinrow .field { letter-spacing: 8px; font-size: 24px; }
   .joinrow .btn { font-size: 18px; padding: 0 22px; white-space: nowrap; }
   #err { min-height: 22px; color: #ff9aa2; font-weight: 800; }
+  .skinrow { display: flex; gap: 8px; margin-top: 4px; justify-content: center; }
+  .skinbtn { padding: 8px 14px; border-radius: 8px; border: 2px solid #fff; background: #374151; cursor: pointer; font-weight: bold; }
+  .skinbtn.active { background: #ffd23f; color: #3a2a00; border-color: #ffd23f; }
 
   /* ---------- ロビー ---------- */
   #lobby { }
@@ -91,6 +95,7 @@
 <div id="hud"></div>
 <div id="banner"></div>
 <button class="btn red" id="placeBtn" style="font-size:22px;padding:16px 34px">📍 ここに消しゴムを設置 (SPACE)</button>
+<button class="btn blue" id="itemBtn">⚡ アイテム使用 (Q)</button>
 <div id="toast"></div>
 
 <!-- スタート画面 -->
@@ -98,6 +103,12 @@
   <div class="logo" style="position:relative;text-align:center">消しゴム奪取<small>＆ エレベーター脱出</small></div>
   <div class="center">
     <input id="name" class="field" maxlength="12" placeholder="プレイヤー名">
+    <div style="font-size:14px;font-weight:bold;color:#ffd23f">スキン選択</div>
+    <div class="skinrow" id="skinSelect">
+      <button class="skinbtn active" data-skin="default">👦 通常</button>
+      <button class="skinbtn" data-skin="ninja">🥷 忍者</button>
+      <button class="skinbtn" data-skin="robot">🤖 ロボット</button>
+    </div>
     <button id="btnCreate" class="btn yellow big">ルームを作る</button>
     <button id="btnSolo" class="btn blue big">CPUと戦う</button>
     <div class="joinrow">
@@ -136,10 +147,11 @@
   <button class="btn yellow" id="copyBtn">コードをコピー</button>
 </div>
 
+<!-- 結果画面 -->
 <div id="result" class="overlay">
   <h1 id="resTitle"></h1>
   <p id="resMsg"></p>
-  <p style="font-size:14px">まもなくロビーに戻ります…</p>
+  <button class="btn yellow" id="toLobbyBtn" style="font-size:22px;padding:16px 36px;margin-top:20px">🏠 ロビーに戻る</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -151,7 +163,7 @@ const mini = $('mini'), mctx = mini.getContext('2d');
 const hud = $('hud');
 
 let world = null, cfg = null, mazeCanvas = null, state = null, inGame = false;
-let myRole = 'runner', myName = '', lobbyData = null, TH = 0;
+let myRole = 'runner', myName = '', mySkin = 'default', lobbyData = null, TH = 0;
 let views = {}, camV = null, meV = null, ended = false;
 let prevOpen = false, lastSec = -1;
 
@@ -159,6 +171,17 @@ function resize() { cv.width = innerWidth; cv.height = innerHeight; }
 addEventListener('resize', resize); resize();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const show = (id, on) => { $(id).style.display = on ? 'flex' : 'none'; };
+
+// ---------- スキン選択 ----------
+let curSkin = 'default';
+document.querySelectorAll('.skinbtn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.skinbtn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    curSkin = b.dataset.skin;
+    socket.emit('setSkin', curSkin);
+  };
+});
 
 // ---------- サウンド ----------
 let AC = null;
@@ -174,9 +197,9 @@ function initAudio() { if (!AC) { try { AC = new (window.AudioContext || window.
 // ---------- スタート画面 ----------
 try { $('name').value = localStorage.getItem('pname') || ''; } catch (e) {}
 function nm() { const v = $('name').value.trim(); try { localStorage.setItem('pname', v); } catch (e) {} return v; }
-$('btnCreate').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('create', { name: nm() }); };
-$('btnSolo').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('solo', { name: nm() }); };
-$('btnJoin').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('join', { name: nm(), code: $('code').value }); };
+$('btnCreate').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('create', { name: nm(), skin: curSkin }); };
+$('btnSolo').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('solo', { name: nm(), skin: curSkin }); };
+$('btnJoin').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('join', { name: nm(), code: $('code').value, skin: curSkin }); };
 $('code').addEventListener('input', () => { $('code').value = $('code').value.replace(/\D/g, '').slice(0, 5); });
 $('code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnJoin').click(); });
 socket.on('errmsg', (m) => { $('err').textContent = m; });
@@ -212,6 +235,7 @@ function renderLobby() {
 document.querySelectorAll('#lobby [data-role]').forEach((b) => b.onclick = () => socket.emit('setRole', b.dataset.role));
 $('start').onclick = () => { initAudio(); socket.emit('start'); };
 $('leave').onclick = () => { socket.emit('leave'); lobbyData = null; show('lobby', false); show('title', true); };
+$('toLobbyBtn').onclick = () => { socket.emit('leave'); show('result', false); show('lobby', true); };
 $('codePill').onclick = () => show('codeModal', true);
 $('codeModal').onclick = () => show('codeModal', false);
 $('copyBtn').onclick = (e) => {
@@ -219,7 +243,7 @@ $('copyBtn').onclick = (e) => {
   const t = lobbyData ? lobbyData.code : '';
   try { navigator.clipboard.writeText(t); $('copyBtn').textContent = 'コピーした！'; setTimeout(() => $('copyBtn').textContent = 'コードをコピー', 1500); } catch (er) {}
 };
-function hideGameUI() { mini.style.display = 'none'; hud.style.display = 'none'; $('banner').style.display = 'none'; $('placeBtn').style.display = 'none'; }
+function hideGameUI() { mini.style.display = 'none'; hud.style.display = 'none'; $('banner').style.display = 'none'; $('placeBtn').style.display = 'none'; $('itemBtn').style.display = 'none'; }
 
 // ---------- ゲーム開始 ----------
 socket.on('init', (w) => {
@@ -229,7 +253,7 @@ socket.on('init', (w) => {
   inGame = true;
   show('title', false); show('lobby', false); show('result', false); show('codeModal', false);
   mini.style.display = 'block'; hud.style.display = 'block';
-  toast(myRole === 'runner' ? '逃げ側：消しゴムを探し、自分のエレベーター(画面下)から脱出せよ！' : '鬼側：消しゴムを好きな場所に設置しよう！');
+  toast(myRole === 'runner' ? '逃げ側：消しゴムを探し、自分のエレベーターから脱出せよ！' : '鬼側：消しゴムを30秒以内に設置しよう！');
 });
 socket.on('ev', (m) => toast(m));
 function toast(m) {
@@ -252,8 +276,9 @@ socket.on('state', (s) => {
   }
 });
 $('placeBtn').onclick = () => socket.emit('place');
+$('itemBtn').onclick = () => socket.emit('useItem');
 
-// ---------- 入力（画面基準 → ワールド基準に回転して送信）----------
+// ---------- 入力 ----------
 const keys = { u: 0, d: 0, l: 0, r: 0 };
 const kmap = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
 function sendInput() {
@@ -265,6 +290,7 @@ function sendInput() {
 addEventListener('keydown', (e) => {
   if (!inGame) return;
   if (e.code === 'Space') { e.preventDefault(); socket.emit('place'); return; }
+  if (e.code === 'KeyQ') { e.preventDefault(); socket.emit('useItem'); return; }
   const k = kmap[e.code]; if (!k) return;
   e.preventDefault();
   if (!keys[k]) { keys[k] = 1; sendInput(); }
@@ -313,7 +339,6 @@ function metalPanel(x, y, w, h) {
   for (let i = 1; i < 4; i++) ctx.fillRect(x + (w * i) / 4 - 1, y + 4, 2, h - 8);
 }
 
-// owned: このエレベーターが自分用か / showOpen: 扉の開閉状態を見せるか
 function drawElevator(i, el, now, owned, showOpen) {
   const E = world.elevs[i], T = world.T, cx = E.tx * T + T / 2, cy = E.ty * T + T / 2;
   const door = showOpen ? el.door : 0, open = showOpen && el.open;
@@ -336,7 +361,6 @@ function drawElevator(i, el, now, owned, showOpen) {
   ctx.fillStyle = !showOpen ? '#4b5563' : !open ? '#7f1d1d' : warn ? (blink ? '#ef4444' : '#450a0a') : mid ? (blink ? '#f59e0b' : '#78350f') : '#22c55e';
   ctx.fillRect(T / 2 - 16, 8, 32, 8);
   ctx.restore();
-  // ラベルは常に正立
   const lx = cx + E.dx * (T / 2 + 14), ly = cy + E.dy * (T / 2 + 14);
   ctx.save(); ctx.translate(lx, ly); ctx.rotate(-TH);
   ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
@@ -346,39 +370,47 @@ function drawElevator(i, el, now, owned, showOpen) {
   ctx.restore();
 }
 
-function bodyPath(isOni, r) {
-  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+function bodyPath(isOni, r, skin) {
+  ctx.beginPath();
+  if (skin === 'robot') {
+    ctx.rect(-r, -r, r * 2, r * 2);
+  } else if (skin === 'ninja') {
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+  } else {
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+  }
   if (isOni) {
     ctx.moveTo(-13, -16); ctx.lineTo(-8, -32); ctx.lineTo(-3, -19); ctx.closePath();
     ctx.moveTo(13, -16); ctx.lineTo(8, -32); ctx.lineTo(3, -19); ctx.closePath();
   }
 }
 function drawActor(e, v, alpha, isMe, now) {
-  const isOni = e.role === 'oni', r = isOni ? 22 : 18;
+  const isOni = e.role === 'oni', r = isOni ? 22 : 18, skin = e.skin || 'default';
   ctx.save(); ctx.translate(v.x, v.y); ctx.rotate(-TH); ctx.globalAlpha = alpha;
   if (!e.al && !isOni) {
     ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.stroke(); ctx.restore(); return;
   }
   if (e.inv && Math.floor(now / 100) % 2) ctx.globalAlpha *= 0.35;
   if (isOni) {
-    ctx.fillStyle = e.st ? '#9ca3af' : '#dc2626'; bodyPath(true, r); ctx.fill();
+    ctx.fillStyle = e.st ? '#9ca3af' : '#dc2626'; bodyPath(true, r, skin); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-7, -4, 4.5, 0, 7); ctx.arc(7, -4, 4.5, 0, 7); ctx.fill();
     ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(-7, -4, 2, 0, 7); ctx.arc(7, -4, 2, 0, 7); ctx.fill();
   } else {
-    ctx.fillStyle = isMe ? '#3b82f6' : '#22d3ee'; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = skin === 'ninja' ? '#111827' : skin === 'robot' ? '#93c5fd' : (isMe ? '#3b82f6' : '#22d3ee');
+    bodyPath(false, r, skin); ctx.fill();
+    ctx.strokeStyle = skin === 'ninja' ? '#f59e0b' : '#fff'; ctx.lineWidth = 3; ctx.stroke();
     if (e.e) { ctx.fillStyle = '#f9a8d4'; ctx.fillRect(-10, -34, 20, 12); ctx.fillStyle = '#3b82f6'; ctx.fillRect(-10, -34, 6, 12); }
   }
   ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#fff'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(e.n || '', 0, r + 15);
   ctx.restore();
 }
-// 暗ガリの「影」：輪郭がうっすら見え、鬼は目だけが赤く光る
+
 function drawSil(e, v, a, now) {
   const isOni = e.role === 'oni', r = isOni ? 22 : 18;
   ctx.save(); ctx.translate(v.x, v.y); ctx.rotate(-TH);
   ctx.globalAlpha = a * (0.8 + 0.2 * Math.sin(now / 130 + (v.x + v.y) * 0.05));
-  ctx.fillStyle = '#050308'; bodyPath(isOni, r); ctx.fill();
+  ctx.fillStyle = '#050308'; bodyPath(isOni, r, 'default'); ctx.fill();
   ctx.strokeStyle = isOni ? 'rgba(255,70,70,0.75)' : 'rgba(130,225,255,0.65)'; ctx.lineWidth = 2; ctx.stroke();
   if (isOni && !e.st) {
     ctx.fillStyle = '#ff2a2a'; ctx.shadowColor = '#ff2a2a'; ctx.shadowBlur = 10;
@@ -406,23 +438,35 @@ function frame(now) {
   const el = state.el, T = world.T, Z = cfg.zoom;
   const lightR = cfg.lightR[myRole], ghostR = cfg.ghostR[myRole];
 
-  // 効果音
   if (el.open && !prevOpen) beep(880, 0.25, 0.08, 'sine');
   if (!el.open && prevOpen) beep(80, 0.5, 0.2, 'sawtooth');
   prevOpen = el.open;
   if (el.open && el.left <= 8) { const sec = Math.ceil(el.left); if (sec !== lastSec) { lastSec = sec; beep(450 + (8 - sec) * 90, 0.12, 0.07); } } else lastSec = -1;
 
-  // 画面シェイク
   const danger = el.open && el.left < 4 ? (4 - el.left) / 4 : 0;
   const sh = danger * (state.me.e ? 4 : 1.5);
   SX = sh ? (Math.random() - 0.5) * sh * 2 : 0; SY = sh ? (Math.random() - 0.5) * sh * 2 : 0;
 
-  // ===== パス1：ワールド（明るい部分）=====
+  // ===== パス1：ワールド =====
   withWorld(() => {
     ctx.drawImage(mazeCanvas, 0, 0);
     for (let i = 0; i < 4; i++) {
       const owned = i === state.side;
       drawElevator(i, el, now, owned, myRole === 'oni' || owned);
+    }
+    // ワープ床
+    if (state.warps) {
+      for (const w of state.warps) {
+        ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(w.x, w.y, 16, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#e879f9'; ctx.lineWidth = 3; ctx.stroke();
+      }
+    }
+    // 宝箱
+    if (state.chests) {
+      for (const ch of state.chests) {
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(ch.x - 12, ch.y - 10, 24, 20);
+        ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2; ctx.strokeRect(ch.x - 12, ch.y - 10, 24, 20);
+      }
     }
     if (state.er && !state.er.c) {
       ctx.save(); ctx.translate(state.er.x, state.er.y); ctx.rotate(-TH);
@@ -436,7 +480,7 @@ function frame(now) {
       if (e.role !== myRole) { const d = Math.hypot(v.x - camV.x, v.y - camV.y); a = clamp((lightR * 0.8 - d) / (lightR * 0.35), 0, 1); if (a <= 0.02) continue; }
       drawActor(e, v, a, false, now);
     }
-    if (state.me.al || myRole === 'oni') drawActor({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, n: myName }, meV, 1, true, now);
+    if (state.me.al || myRole === 'oni') drawActor({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, n: myName, skin: mySkin }, meV, state.me.invis ? 0.3 : 1, true, now);
   });
 
   // ===== 暗闇・靄 =====
@@ -446,7 +490,7 @@ function frame(now) {
   grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(0.6, 'rgba(0,0,0,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0.9)');
   ctx.fillStyle = grd; ctx.fillRect(0, 0, cv.width, cv.height);
 
-  // ===== パス2：闇の中の影（完全には消えない）=====
+  // ===== パス2：闇の中の影 =====
   withWorld(() => {
     for (const e of state.ents) {
       if (e.role === myRole) continue;
@@ -455,7 +499,7 @@ function frame(now) {
       const a = 0.62 * up * down;
       if (a > 0.02) drawSil(e, v, a, now);
     }
-    if (state.er && !state.er.c) {                       // 遠くで消しゴムがちらりと光る
+    if (state.er && !state.er.c) {
       const d = Math.hypot(state.er.x - camV.x, state.er.y - camV.y);
       if (d > lightR * 0.7) {
         ctx.save(); ctx.translate(state.er.x, state.er.y);
@@ -466,7 +510,18 @@ function frame(now) {
     }
   });
 
-  // ===== エレベーターの光（暗闇越しの灯台）=====
+  // ===== 消しゴムの方向を示す矢印 (画面端インジケーター) =====
+  if (myRole === 'runner' && state.er && !state.er.c && state.er.x != null) {
+    const p = w2s(state.er.x, state.er.y);
+    if (p.x < 40 || p.x > cv.width - 40 || p.y < 40 || p.y > cv.height - 40) {
+      const ang = Math.atan2(p.y - cy, p.x - cx);
+      ctx.save(); ctx.translate(cx + Math.cos(ang) * 140, cy + Math.sin(ang) * 140); ctx.rotate(ang);
+      ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -11); ctx.lineTo(-10, 11); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // エレベーターの光
   if (el.open) {
     for (let i = 0; i < 4; i++) {
       if (myRole === 'runner' && i !== state.side) continue;
@@ -479,23 +534,7 @@ function frame(now) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(0, 0, cv.width, cv.height); ctx.restore();
     }
   }
-  // 消しゴム所持中：自分のエレベーターへの矢印
-  if (myRole === 'runner' && state.me.e && state.me.al) {
-    const E = world.elevs[state.side], p = w2s(E.tx * T + T / 2, E.ty * T + T / 2);
-    const ang = Math.atan2(p.y - cy, p.x - cx), dist = Math.hypot(p.x - cx, p.y - cy);
-    if (dist > 130) {
-      ctx.save(); ctx.translate(cx + Math.cos(ang) * 110, cy + Math.sin(ang) * 110); ctx.rotate(ang);
-      ctx.globalAlpha = 0.6 + 0.3 * Math.sin(now / 150); ctx.fillStyle = '#22d3ee';
-      ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -11); ctx.lineTo(-10, 11); ctx.closePath(); ctx.fill(); ctx.restore();
-    }
-  }
-  // 危険時の赤ビネット
-  if (danger > 0 && state.me.e) {
-    const pulse = 0.5 + 0.5 * Math.sin(now / 80);
-    const vg = ctx.createRadialGradient(cx, cy, Math.min(cv.width, cv.height) * 0.3, cx, cy, Math.max(cv.width, cv.height) * 0.7);
-    vg.addColorStop(0, 'rgba(255,0,0,0)'); vg.addColorStop(1, 'rgba(255,0,0,' + (0.35 * danger * (0.5 + pulse)) + ')');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, cv.width, cv.height);
-  }
+
   drawMini(now);
   updateHud();
 }
@@ -503,7 +542,7 @@ function frame(now) {
 function drawMini(now) {
   const S = mini.width, M = world.map, sc = S / M, T = world.T, el = state.el;
   mctx.clearRect(0, 0, S, S);
-  mctx.save(); mctx.translate(S / 2, S / 2); mctx.rotate(TH); mctx.translate(-S / 2, -S / 2);   // メイン画面と同じ向き
+  mctx.save(); mctx.translate(S / 2, S / 2); mctx.rotate(TH); mctx.translate(-S / 2, -S / 2);
   mctx.globalAlpha = 0.85; mctx.drawImage(mazeCanvas, 0, 0, S, S); mctx.globalAlpha = 1;
   for (let i = 0; i < 4; i++) {
     const E = world.elevs[i], owned = i === state.side;
@@ -512,14 +551,10 @@ function drawMini(now) {
     mctx.fillRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc);
     if (owned) { mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5; mctx.strokeRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc); }
   }
-  if (myRole === 'oni' && state.er && !state.er.c && state.er.x != null) {            // 鬼は設置した消しゴムが分かる
+  if (myRole === 'oni' && state.er && !state.er.c && state.er.x != null) {
     mctx.fillStyle = '#facc15'; mctx.beginPath(); mctx.arc(state.er.x * sc, state.er.y * sc, 4, 0, 7); mctx.fill();
   }
-  if (state.hint) {                                                                    // 逃げ側：時間経過で大まかなヒント
-    mctx.strokeStyle = 'rgba(250,204,21,.9)'; mctx.lineWidth = 2; mctx.setLineDash([4, 3]);
-    mctx.beginPath(); mctx.arc(state.hint.x * sc, state.hint.y * sc, state.hint.r * sc, 0, 7); mctx.stroke(); mctx.setLineDash([]);
-  }
-  for (const e of state.ents) {                                                        // 味方のみ（鬼は逃げ側のミニマップに出ない）
+  for (const e of state.ents) {
     if (e.role !== myRole || e.al === false) continue;
     mctx.fillStyle = myRole === 'oni' ? '#f87171' : '#22d3ee';
     mctx.beginPath(); mctx.arc(e.x * sc, e.y * sc, 3, 0, 7); mctx.fill();
@@ -529,34 +564,36 @@ function drawMini(now) {
     mctx.beginPath(); mctx.arc(meV.x * sc, meV.y * sc, 4, 0, 7); mctx.fill();
     mctx.strokeStyle = '#fff'; mctx.lineWidth = 1; mctx.stroke();
   }
-  if (state.ping) {
-    const p = (now % 600) / 600;
-    mctx.strokeStyle = 'rgba(251,191,36,' + (1 - p) + ')'; mctx.lineWidth = 2;
-    mctx.beginPath(); mctx.arc(state.ping.x * sc, state.ping.y * sc, 4 + p * 12, 0, 7); mctx.stroke();
-  }
   mctx.restore();
 }
 
 function updateHud() {
   const s = state, el = s.el;
-  const b = $('banner'), pb = $('placeBtn');
-  pb.style.display = 'none';
+  const b = $('banner'), pb = $('placeBtn'), ib = $('itemBtn');
+  pb.style.display = 'none'; ib.style.display = 'none';
+
   if (s.ph === 'place' && s.s === 'playing') {
     const sec = Math.ceil(s.pl);
     b.style.display = 'block'; b.style.color = '#fde68a';
     if (myRole === 'oni') {
-      if (!s.placed) { b.innerHTML = '消しゴムを置く場所を選べ！<br><span style="font-size:15px;color:#fff">好きな場所まで歩いて SPACE（自動設置まで ' + sec + '秒）</span>'; pb.style.display = 'block'; }
+      if (!s.placed) { b.innerHTML = '消しゴムを置く場所を選べ！（残り ' + sec + '秒）<br><span style="font-size:15px;color:#fff">好きな場所まで歩いて SPACE またはボタンで設置</span>'; pb.style.display = 'block'; }
       else b.textContent = '設置完了…スタートまで ' + sec;
-    } else b.innerHTML = '鬼が消しゴムを隠している…<br><span style="font-size:15px;color:#fff">スタートまで待機 ' + sec + '</span>';
+    } else b.innerHTML = '鬼が消しゴムを隠しています（残り ' + sec + '秒）<br><span style="font-size:15px;color:#fff">スタートまで待機中…</span>';
   } else if (myRole === 'runner' && !s.me.al && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#fca5a5'; b.textContent = '捕まった…仲間を観戦中'; }
   else if (myRole === 'oni' && s.me.st && s.s === 'playing') { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = '硬直中…'; }
   else b.style.display = 'none';
 
+  if (s.me.item && s.s === 'playing') {
+    ib.style.display = 'block';
+    const names = { stun: 'スタングレネード', speed: 'スピードブーツ', invis: '透明化スーツ' };
+    ib.textContent = '⚡ アイテム: ' + names[s.me.item] + ' (Q)';
+  }
+
   const t = Math.max(0, Math.ceil(s.t)), mm = Math.floor(t / 60), ss = String(t % 60).padStart(2, '0');
   let h = '<b style="color:' + (myRole === 'oni' ? '#f87171' : '#60a5fa') + '">' + (myRole === 'oni' ? '👹 鬼側' : '🏃 逃げ側') + '</b> 残り ' + mm + ':' + ss;
   h += '<br>生存している逃げ側：' + s.n;
-  if (myRole === 'runner') h += '<br>消しゴム：' + (s.me.e ? '<b style="color:#f9a8d4">所持中！自分のエレベーターへ</b>' : s.er && s.er.c ? '誰かが所持' : '探索中…');
-  else h += '<br>消しゴム：' + (!s.placed ? '未設置' : s.er && s.er.c ? '奪われた！' : '設置中');
+  if (myRole === 'runner') h += '<br>消しゴム：' + (s.me.e ? '<b style="color:#f9a8d4">所持中！自分のエレベーターへ</b>' : s.er && s.er.c ? '誰かが所持' : '矢印の方向へ探索せよ');
+  else h += '<br>消しゴム：' + (!s.placed ? '未設置' : s.er && s.er.c ? '奪われた！' : '設置完了');
   h += '<br>エレベーター：' + (el.open ? '<b style="color:' + (el.left < 3 ? '#f87171' : el.left < 8 ? '#fbbf24' : '#4ade80') + '">OPEN 残り ' + el.left.toFixed(1) + '秒</b>' : '<span style="color:#f87171">CLOSED</span>');
   hud.innerHTML = h;
 }
