@@ -13,7 +13,7 @@ const MAP_HEIGHT = 2000;
 
 let rooms = {};
 
-// 通路の幅を均一（幅60pxの通路ができる格子状の迷路壁）にしたデータ
+// 格子状にきれいに配置された障害物ブロックのデータ
 const walls = [
   // 外枠
   { x: 0, y: 0, w: MAP_WIDTH, h: 40 },
@@ -21,29 +21,30 @@ const walls = [
   { x: 0, y: 0, w: 40, h: MAP_HEIGHT },
   { x: MAP_WIDTH - 40, y: 0, w: 40, h: MAP_HEIGHT },
 
-  // 均一なグリッド迷路壁
-  { x: 160, y: 0, w: 40, h: 400 },
-  { x: 160, y: 520, w: 40, h: 1040 },
-  { x: 320, y: 160, w: 40, h: 1400 },
-  { x: 480, y: 0, w: 40, h: 400 },
-  { x: 480, y: 520, w: 40, h: 1200 },
-  { x: 640, y: 160, w: 40, h: 1400 },
-  { x: 800, y: 320, w: 40, h: 1200 },
-  { x: 960, y: 0, w: 40, h: 1400 },
-  { x: 1120, y: 160, w: 40, h: 1400 },
-  { x: 1280, y: 320, w: 40, h: 1200 },
-  { x: 1440, y: 0, w: 40, h: 1400 },
-  { x: 1600, y: 160, w: 40, h: 1400 },
-  { x: 1800, y: 400, w: 40, h: 1200 },
+  // グリッド状のブロック障害物（一定間隔で配置）
+  // Row 1
+  { x: 200, y: 200, w: 160, h: 160 },
+  { x: 600, y: 200, w: 160, h: 160 },
+  { x: 1000, y: 200, w: 160, h: 160 },
+  { x: 1400, y: 200, w: 160, h: 160 },
 
-  // 横方向の接続壁（一本道に仕切る）
-  { x: 160, y: 400, w: 320, h: 40 },
-  { x: 480, y: 800, w: 320, h: 40 },
-  { x: 200, y: 1200, w: 280, h: 40 },
-  { x: 640, y: 1200, w: 320, h: 40 },
-  { x: 960, y: 800, w: 320, h: 40 },
-  { x: 1280, y: 400, w: 320, h: 40 },
-  { x: 1440, y: 1200, w: 360, h: 40 }
+  // Row 2
+  { x: 200, y: 600, w: 160, h: 160 },
+  { x: 600, y: 600, w: 160, h: 160 },
+  { x: 1000, y: 600, w: 160, h: 160 },
+  { x: 1400, y: 600, w: 160, h: 160 },
+
+  // Row 3
+  { x: 200, y: 1000, w: 160, h: 160 },
+  { x: 600, y: 1000, w: 160, h: 160 },
+  { x: 1000, y: 1000, w: 160, h: 160 },
+  { x: 1400, y: 1000, w: 160, h: 160 },
+
+  // Row 4
+  { x: 200, y: 1400, w: 160, h: 160 },
+  { x: 600, y: 1400, w: 160, h: 160 },
+  { x: 1000, y: 1400, w: 160, h: 160 },
+  { x: 1400, y: 1400, w: 160, h: 160 }
 ];
 
 function checkRectCollision(x, y, radius, rect) {
@@ -67,9 +68,9 @@ io.on('connection', (socket) => {
   socket.on('join_game', (data) => {
     const { name, mode } = data;
     
-    // 初期位置（エレベーター近くのスタート地点）
+    // 初期位置（エレベーター付近）
     let x = MAP_WIDTH / 2;
-    let y = MAP_HEIGHT - 120;
+    let y = MAP_HEIGHT - 100;
     
     rooms[socket.id] = {
       player: {
@@ -84,7 +85,7 @@ io.on('connection', (socket) => {
         color: '#2ed573'
       },
       gameData: {
-        // 消しゴムの場所：エレベーターから一番遠いマップの最奥（上部中央）
+        // 消しゴムの場所：一番遠いマップ最奥（上部中央）
         eraser: { x: MAP_WIDTH / 2, y: 100, holder: null, isTaken: false },
         elevator: { x: MAP_WIDTH / 2, y: MAP_HEIGHT - 80, isOpen: false, timer: 0 },
         mode: mode,
@@ -94,7 +95,7 @@ io.on('connection', (socket) => {
         id: 'cpu_oni',
         name: 'CPU鬼',
         x: MAP_WIDTH / 2,
-        y: 800,
+        y: 1000,
         radius: 16,
         role: 'oni',
         color: '#ff4757',
@@ -130,7 +131,7 @@ io.on('connection', (socket) => {
         e.holder = room.player.id;
         room.player.hasEraser = true;
         room.gameData.elevator.isOpen = true;
-        room.gameData.elevator.timer = 1200; // 脱出までの制限時間（約20秒）
+        room.gameData.elevator.timer = 1200; // 約20秒間オープン
       }
     }
 
@@ -158,7 +159,7 @@ setInterval(() => {
     if (room.gameData.elevator.isOpen) {
       room.gameData.elevator.timer--;
       if (room.gameData.elevator.timer <= 0) {
-        room.gameData.elevator.isOpen = false;
+        room.gameData.elevator.isOpen = false; // 制限時間が切れるとエレベーターが閉まるヒヤヒヤ要素！
       }
     }
 
@@ -169,8 +170,8 @@ setInterval(() => {
       let nextX = cpu.x + Math.cos(angle) * cpu.speed;
       let nextY = cpu.y + Math.sin(angle) * cpu.speed;
 
-      if (canMatch = canMove(nextX, cpu.y, cpu.radius)) cpu.x = nextX;
-      if (canMatch = canMove(cpu.x, nextY, cpu.radius)) cpu.y = nextY;
+      if (canMove(nextX, cpu.y, cpu.radius)) cpu.x = nextX;
+      if (canMove(cpu.x, nextY, cpu.radius)) cpu.y = nextY;
 
       let catchDist = Math.hypot(cpu.x - p.x, cpu.y - p.y);
       if (catchDist < cpu.radius + p.radius) {
