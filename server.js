@@ -221,7 +221,7 @@ function startGame(room) {
     { x: randomSpot(g).x, y: randomSpot(g).y, opened: false }
   ];
 
-  // 回復薬の配置
+  // 回復薬が必ず通路の中心・壁に埋まらない位置に生成されるよう修正
   g.potions = [
     { x: randomSpot(g).x, y: randomSpot(g).y, taken: false },
     { x: randomSpot(g).x, y: randomSpot(g).y, taken: false }
@@ -252,6 +252,7 @@ function validSpot(g, x, y) {
 function randomSpot(g) {
   const cands = [];
   for (let ty = 0; ty < N; ty++) for (let tx = 0; tx < N; tx++) {
+    // 完全にタイルの中心座標にする
     const x = tx * T + T / 2, y = ty * T + T / 2;
     if (g.grid[ty][tx] === 0 && validSpot(g, x, y)) cands.push({ x, y });
   }
@@ -353,7 +354,7 @@ function step(g, dt) {
   for (const e of g.ents) {
     if (!e.alive) continue;
 
-    // 自動スタングレネード判定（逃げ側が所持・半径3ブロック=240px以内に鬼がいる場合）
+    // 自動スタングレネード判定（半径3ブロック=240px以内）
     if (e.role === 'runner' && e.item === 'stun') {
       for (const o of g.ents) {
         if (o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - e.x, o.y - e.y) < 240) {
@@ -425,7 +426,7 @@ function step(g, dt) {
     if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) { g.status = 'runwin'; g.slide = el.left; return; }
   }
 
-  // 攻撃・ダメージ判定（鬼がヒットすると初期位置へテレポート）
+  // 攻撃・ダメージ判定（鬼がヒットすると初期位置へテレポートし、リスポーン硬直3秒）
   for (const o of g.ents) {
     if (o.role !== 'oni' || o.stun > 0) continue;
     for (const r of runnersAlive) {
@@ -434,18 +435,18 @@ function step(g, dt) {
         r.hp -= 50;
         r.invuln = INVULN;
         
-        // 鬼をスポーン位置へ強制送還
+        // 鬼をスポーン位置へ強制送還 ＆ 3秒間硬直（リスポーン時間3秒）
         o.x = o.spawnX; o.y = o.spawnY;
-        o.stun = 1.5; // スポーン復帰時の短い無敵/スタック防止
+        o.stun = 3.0;
 
         if (r.hasEraser) {
           dropEraser(g, r);
-          ev(g, '💥 ' + r.name + ' が攻撃を受けダメージ！消しゴムを落とした！（鬼は戻された）');
+          ev(g, '💥 ' + r.name + ' が攻撃を受けダメージ！消しゴムを落とした！（鬼は3秒間スタン）');
         } else if (r.hp <= 0) {
           r.alive = false;
-          ev(g, '☠ ' + r.name + ' が倒された！（鬼は戻された）');
+          ev(g, '☠ ' + r.name + ' が倒された！（鬼は3秒間スタン）');
         } else {
-          ev(g, '💥 ' + r.name + ' がダメージを受けた！残りHP: ' + r.hp + '%（鬼は戻された）');
+          ev(g, '💥 ' + r.name + ' がダメージを受けた！残りHP: ' + r.hp + '%（鬼は3秒間スタン）');
         }
         break;
       }
@@ -483,9 +484,12 @@ function snapshot(g, r) {
   const E = g.eraser;
   let er = null, hint = null;
   if (E.placed) {
-    if (r.role === 'oni') er = E.carried ? { c: true } : { x: E.x, y: E.y, c: false };
-    else if (E.carried) er = { c: true, x: E.x, y: E.y };
-    else if (Math.hypot(E.x - ref.x, E.y - ref.y) < ghost && losClear(g, ref.x, ref.y, E.x, E.y)) er = { x: E.x, y: E.y, c: false };
+    // 逃げ側には視界外でも常に消しゴムの正確な位置を渡して、画面端の矢印で確実に方向を示せるようにする
+    if (r.role === 'runner') {
+      er = E.carried ? { c: true, x: E.x, y: E.y } : { x: E.x, y: E.y, c: false };
+    } else {
+      if (r.role === 'oni') er = E.carried ? { c: true } : { x: E.x, y: E.y, c: false };
+    }
     if (r.role === 'runner' && !E.carried && g.playT > HINT_AFTER) hint = { x: E.x + g.hintOff.x, y: E.y + g.hintOff.y, r: 260 };
   }
   let ping = null;
