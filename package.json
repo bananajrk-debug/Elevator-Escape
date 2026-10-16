@@ -1,12 +1,13 @@
 {
-  "name": "senobic-brothers",
+  "name": "keshigomu-escape",
   "version": "1.0.0",
-  "description": "2D Fighting Game - Senobic Brothers",
+  "description": "Multiplayer tag and escape game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
   }
 }
