@@ -1,7 +1,7 @@
 {
   "name": "keshigomu-escape",
   "version": "1.0.0",
-  "description": "Grid-based maze tag and escape game",
+  "description": "Grid-based block maze tag and escape game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
