@@ -1,10 +1,13 @@
 {
-  "name": "keshigomu-escape",
+  "name": "eraser-elevator-game",
   "version": "1.0.0",
-  "description": "Grid-based block maze tag and escape game",
+  "description": "消しゴム奪取＆エレベーター脱出ゲーム",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "express": "^4.19.2",
