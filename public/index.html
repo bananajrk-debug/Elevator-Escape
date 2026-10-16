@@ -2,136 +2,252 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>消しゴム奪取＆エレベーター脱出</title>
+    <title>消しゴム奪取＆エレベーター脱出 - 迷路編</title>
     <style>
         body {
             margin: 0;
-            background: #1e1e1e;
-            color: white;
+            background: #111;
+            color: #fff;
             font-family: sans-serif;
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
+        }
+        #screen {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: #222;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            border-radius: 8px;
             overflow: hidden;
         }
-        canvas {
-            background: #2d3436;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            border-radius: 8px;
+        .panel {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(20,20,20,0.95);
+            z-index: 10;
         }
-        #ui {
-            margin-bottom: 10px;
-            font-size: 18px;
-            font-weight: bold;
+        h1 { color: #ff4757; font-size: 32px; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255,71,87,0.5); }
+        p { color: #aaa; margin-bottom: 20px; }
+        input, button {
+            padding: 12px 24px;
+            font-size: 16px;
+            margin: 8px;
+            border-radius: 6px;
+            border: none;
+            outline: none;
+            cursor: pointer;
+        }
+        input { background: #333; color: white; border: 1px solid #555; width: 250px; text-align: center; }
+        .btn-primary { background: #2ed573; color: white; font-weight: bold; }
+        .btn-primary:hover { background: #26af5f; }
+        .btn-secondary { background: #1e90ff; color: white; font-weight: bold; }
+        .btn-secondary:hover { background: #1c7ed6; }
+        canvas { display: block; }
+        #hud {
+            position: absolute;
+            top: 10px; left: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 5;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui">読み込み中...</div>
+<div id="screen">
+    <!-- タイトル＆ロビー画面 -->
+    <div id="lobby" class="panel">
+        <h1>消しゴム奪取：迷路からの脱出</h1>
+        <p>鬼から逃げ、迷路の奥の消しゴムを奪って最下部のエレベーターへ駆け込め！</p>
+        <input type="text" id="playerName" placeholder="プレイヤー名を入力" value="プレイヤー1">
+        <div>
+            <button class="btn-primary" onclick="startGame('cpu')">CPU対戦で遊ぶ</button>
+        </div>
+    </div>
+
+    <!-- ゲーム中HUD -->
+    <div id="hud" style="display:none;">
+        <div id="hud-text">ステータス</div>
+    </div>
+
     <canvas id="gameCanvas" width="800" height="600"></canvas>
+</div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const ui = document.getElementById('ui');
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const lobby = document.getElementById('lobby');
+    const hud = document.getElementById('hud');
+    const hudText = document.getElementById('hud-text');
 
-        let myId = null;
-        let players = {};
-        let gameData = { eraser: {}, elevator: {} };
-        const keys = {};
+    const MAP_WIDTH = 2000;
+    const MAP_HEIGHT = 2000;
+    const CAMERA_ZOOM = 1.3; // 視点をズーム
 
-        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+    const walls = [
+        { x: 0, y: 0, w: MAP_WIDTH, h: 40 },
+        { x: 0, y: MAP_HEIGHT - 40, w: MAP_WIDTH, h: 40 },
+        { x: 0, y: 0, w: 40, h: MAP_HEIGHT },
+        { x: MAP_WIDTH - 40, y: 0, w: 40, h: MAP_HEIGHT },
+        { x: 200, y: 200, w: 1400, h: 40 },
+        { x: 200, y: 400, w: 40, h: 1000 },
+        { x: 600, y: 600, w: 1200, h: 40 },
+        { x: 600, y: 800, w: 40, h: 800 },
+        { x: 1000, y: 300, w: 40, h: 1200 },
+        { x: 1400, y: 700, w: 40, h: 1100 },
+        { x: 400, y: 1600, w: 1200, h: 40 }
+    ];
 
-        socket.on('init', (data) => {
-            myId = data.id;
-            players = data.players;
-            gameData = data.gameData;
-        });
+    let player = null;
+    let cpu = null;
+    let gameData = null;
+    let inputKeys = { up: false, down: false, left: false, right: false };
 
-        socket.on('update', (data) => {
-            players = data.players;
-            gameData = data.gameData;
-        });
+    function startGame(mode) {
+        const name = document.getElementById('playerName').value || 'プレイヤー';
+        lobby.style.display = 'none';
+        hud.style.display = 'block';
+        socket.emit('join_game', { name, mode });
+    }
 
-        function update() {
-            if (!players[myId] || players[myId].escaped) return;
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'w' || e.key === 'ArrowUp') inputKeys.up = true;
+        if (e.key === 's' || e.key === 'ArrowDown') inputKeys.down = true;
+        if (e.key === 'a' || e.key === 'ArrowLeft') inputKeys.left = true;
+        if (e.key === 'd' || e.key === 'ArrowRight') inputKeys.right = true;
+    });
 
-            let speed = 4;
-            let p = players[myId];
-            if (keys['w'] || keys['allowup']) p.y -= speed;
-            if (keys['s'] || keys['allowdown']) p.y += speed;
-            if (keys['a'] || keys['allowleft']) p.x -= speed;
-            if (keys['d'] || keys['allowright']) p.x += speed;
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'w' || e.key === 'ArrowUp') inputKeys.up = false;
+        if (e.key === 's' || e.key === 'ArrowDown') inputKeys.down = false;
+        if (e.key === 'a' || e.key === 'ArrowLeft') inputKeys.left = false;
+        if (e.key === 'd' || e.key === 'ArrowRight') inputKeys.right = false;
+    });
 
-            // 画面外に出ないように制限
-            p.x = Math.max(p.radius, Math.min(canvas.width - p.radius, p.x));
-            p.y = Math.max(p.radius, Math.min(canvas.height - p.radius, p.y));
+    socket.on('init', (data) => {
+        player = data.player;
+        cpu = data.cpu;
+        gameData = data.gameData;
+    });
 
-            socket.emit('move', { x: p.x, y: p.y });
+    socket.on('update', (data) => {
+        player = data.player;
+        cpu = data.cpu;
+        gameData = data.gameData;
+    });
+
+    function update() {
+        if (!player || gameData.gameOver || player.escaped) return;
+        socket.emit('move', inputKeys);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!player || !gameData) return;
+
+        ctx.save();
+        // プレイヤー中心にカメラを合わせ、ズームを適用
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
+        ctx.translate(-player.x, -player.y);
+
+        // 床の描画
+        ctx.fillStyle = '#1e1e1e';
+        ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+
+        // 迷路の壁を描画
+        ctx.fillStyle = '#2f3542';
+        for (let w of walls) {
+            ctx.fillRect(w.x, w.y, w.w, w.h);
+            ctx.strokeStyle = '#57606f';
+            ctx.strokeRect(w.x, w.y, w.w, w.h);
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // エレベーターの描画（一番下の真ん中）
+        let el = gameData.elevator;
+        ctx.fillStyle = el.isOpen ? '#2ed573' : '#ff4757';
+        ctx.fillRect(el.x - 35, el.y - 25, 70, 50);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(el.isOpen ? `脱出口 (${Math.ceil(el.timer/60)}s)` : 'エレベーター閉', el.x, el.y - 35);
 
-            // エレベーターの描画
-            ctx.fillStyle = gameData.elevator.isOpen ? '#00b894' : '#636e72';
-            ctx.fillRect(gameData.elevator.x - 25, gameData.elevator.y - 25, 50, 50);
+        // 消しゴムの描画（迷路の奥）
+        let e = gameData.eraser;
+        if (!e.isTaken) {
+            ctx.fillStyle = '#ffa502';
+            ctx.fillRect(e.x - 12, e.y - 12, 24, 18);
+            ctx.strokeStyle = '#fff';
+            ctx.strokeRect(e.x - 12, e.y - 12, 24, 18);
             ctx.fillStyle = '#fff';
-            ctx.font = '12px sans-serif';
-            ctx.fillText(gameData.elevator.isOpen ? `OPEN (${Math.ceil(gameData.elevator.timer/60)}s)` : 'CLOSED', gameData.elevator.x - 30, gameData.elevator.y - 35);
-
-            // 消しゴムの描画
-            if (!gameData.eraser.isTaken) {
-                ctx.fillStyle = '#fdcb6e';
-                ctx.fillRect(gameData.eraser.x - 10, gameData.eraser.y - 10, 20, 15);
-                ctx.strokeStyle = '#e17055';
-                ctx.strokeRect(gameData.eraser.x - 10, gameData.eraser.y - 10, 20, 15);
-            }
-
-            // プレイヤーの描画
-            for (let id in players) {
-                let p = players[id];
-                if (p.escaped) continue;
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#fff';
-                ctx.stroke();
-                ctx.closePath();
-
-                // 役割と消しゴム所持の表示
-                ctx.fillStyle = '#fff';
-                ctx.font = '10px sans-serif';
-                ctx.fillText(p.role === 'oni' ? '👹 鬼' : '🏃 逃げ', p.x - 15, p.y - 20);
-
-                if (p.hasEraser) {
-                    ctx.fillText(' eraser ', p.x - 15, p.y + 25);
-                }
-            }
-
-            // UI更新
-            if (players[myId]) {
-                let roleStr = players[myId].role === 'oni' ? '【鬼】鬼から逃げを守り、消しゴムを守れ！' : '【逃げ側】消しゴムを奪ってエレベーターで脱出しろ！';
-                ui.innerText = roleStr;
-            }
+            ctx.fillText('消しゴム', e.x, e.y - 18);
         }
 
-        function loop() {
-            update();
-            draw();
-            requestAnimationFrame(loop);
+        // プレイヤーの描画
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+        ctx.fillStyle = player.color;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+        ctx.closePath();
+
+        ctx.fillStyle = '#fff';
+        ctx.fillText(player.name, player.x, player.y - 25);
+        if (player.hasEraser) {
+            ctx.fillText('📦 消しゴム所持!', player.x, player.y + 30);
         }
 
-        loop();
-    </script>
+        // CPU鬼の描画
+        if (cpu) {
+            ctx.beginPath();
+            ctx.arc(cpu.x, cpu.y, cpu.radius, 0, Math.PI * 2);
+            ctx.fillStyle = cpu.color;
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#fff';
+            ctx.stroke();
+            ctx.closePath();
+
+            ctx.fillStyle = '#ff4757';
+            ctx.fillText('👹 ' + cpu.name, cpu.x, cpu.y - 25);
+        }
+
+        ctx.restore();
+
+        // HUD情報の更新
+        if (player.escaped) {
+            hudText.innerHTML = '<span style="color:#2ed573; font-size:20px;">🎉 脱出成功！おめでとう！</span>';
+        } else if (gameData.gameOver) {
+            hudText.innerHTML = '<span style="color:#ff4757; font-size:20px;">💥 捕まってしまった…ゲームオーバー</span>';
+        } else if (player.hasEraser) {
+            hudText.innerHTML = '📦 消しゴムをゲット！最下部のエレベーターへ急げ！！';
+        } else {
+            hudText.innerHTML = '🏃 迷路の奥にある消しゴムを探して奪え！';
+        }
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    loop();
+</script>
 </body>
 </html>
