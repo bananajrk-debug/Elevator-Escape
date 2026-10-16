@@ -11,7 +11,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ================= 定数 =================
 const N = 19, T = 80, MAP = N * T, MID = (N - 1) / 2;
-// エレベーター：0=上 1=右 2=下 3=左（時計回り）。dx,dy は迷路内側への向き
 const ELEVS = [
   { tx: MID, ty: 0, dx: 0, dy: 1 },
   { tx: N - 1, ty: MID, dx: -1, dy: 0 },
@@ -20,21 +19,21 @@ const ELEVS = [
 ];
 const CFG = {
   zoom: 1.9,
-  lightR: { runner: 230, oni: 270 },   // 明るく照らされる範囲
-  ghostR: { runner: 320, oni: 370 }    // この範囲までは暗がりに「影」として見える
+  lightR: { runner: 230, oni: 270 },
+  ghostR: { runner: 320, oni: 370 }
 };
 const RUNNER_R = 18, ONI_R = 22;
 const SPEED = { runner: 236, carrier: 214, oni: 230, cpu: 204, cpuAngry: 224 };
 const ELEV_OPEN_SEC = 20, CLOSE_PHASE = 8, DOOR_PASS = 0.15;
 const INVULN = 3, STUN = 2, START_STUN = 2, MATCH_TIME = 300;
-const PLACE_TIME = 15, PLACE_MIN = 300, HINT_AFTER = 45;
+const PLACE_TIME = 30, PLACE_MIN = 300, HINT_AFTER = 45;
 const MAX_PLAYERS = 8;
 
 const elevIndexAt = (tx, ty) => { for (let i = 0; i < 4; i++) if (ELEVS[i].tx === tx && ELEVS[i].ty === ty) return i; return -1; };
 const elevCenter = (i) => ({ x: ELEVS[i].tx * T + T / 2, y: ELEVS[i].ty * T + T / 2 });
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-// ================= 迷路生成（毎回ランダム・全通路が必ず連結）=================
+// ================= 迷路生成 =================
 function generateMaze() {
   const g = [];
   for (let y = 0; y < N; y++) g.push(new Array(N).fill(1));
@@ -53,17 +52,16 @@ function generateMaze() {
     g[cy + dy][cx + dx] = 0;
     stack.push([cx + dx, cy + dy]);
   }
-  for (let k = 0; k < 14; k++) {              // 周回路
+  for (let k = 0; k < 14; k++) {
     const x = 1 + Math.floor(Math.random() * (N - 2));
     const y = 1 + Math.floor(Math.random() * (N - 2));
     if ((x + y) % 2 === 1) g[y][x] = 0;
   }
-  for (const E of ELEVS) g[E.ty][E.tx] = 0;   // 4辺のエレベーター
+  for (const E of ELEVS) g[E.ty][E.tx] = 0;
   return g;
 }
 
-// ================= 衝突 =================
-// ent: 判定対象（runner は自分のエレベーターだけ扉が開いていれば入れる）。null は視線判定用（エレベーター=壁）
+// ================= 衝突判定 =================
 function isSolid(g, tx, ty, ent) {
   if (tx < 0 || ty < 0 || tx >= N || ty >= N) return true;
   if (g.grid[ty][tx] === 1) return true;
@@ -123,7 +121,7 @@ function nextTileToward(g, fx, fy, tx, ty, ent) {
   return { tx: cur % N, ty: (cur / N) | 0 };
 }
 
-// ================= ルーム管理（5桁コード）=================
+// ================= ルーム管理 =================
 const rooms = new Map();
 const sockRoom = new Map();
 
@@ -136,7 +134,7 @@ function newCode() {
 }
 function cleanName(n) { return String(n || '').trim().slice(0, 12) || 'プレイヤー'; }
 function sendLobby(room) {
-  const players = [...room.players.values()].map((p) => ({ id: p.id, name: p.name, role: p.role }));
+  const players = [...room.players.values()].map((p) => ({ id: p.id, name: p.name, role: p.role, skin: p.skin }));
   for (const id of room.players.keys()) io.to(id).emit('lobby', { code: room.code, state: room.state, host: room.host, players, you: id });
 }
 function toLobby(room) { room.state = 'lobby'; room.game = null; sendLobby(room); }
@@ -147,8 +145,8 @@ function makeRoom(socket) {
   rooms.set(code, room);
   return room;
 }
-function addPlayer(room, socket, name, role) {
-  room.players.set(socket.id, { id: socket.id, name: cleanName(name), role });
+function addPlayer(room, socket, name, role, skin) {
+  room.players.set(socket.id, { id: socket.id, name: cleanName(name), role, skin: skin || 'default' });
   sockRoom.set(socket.id, room);
 }
 function leaveRoom(id) {
@@ -162,7 +160,7 @@ function leaveRoom(id) {
     if (ent) {
       if (ent.hasEraser) dropEraser(g, ent);
       g.ents = g.ents.filter((e) => e !== ent);
-      if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu' + Date.now(), 'CPU鬼', 'oni', true, Math.floor(Math.random() * 4));
+      if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu' + Date.now(), 'CPU鬼', 'oni', true, Math.floor(Math.random() * 4), 'default');
     }
   }
   if (room.players.size === 0) { rooms.delete(room.code); return; }
@@ -171,15 +169,16 @@ function leaveRoom(id) {
 }
 
 // ================= ゲーム開始 =================
-function addEnt(g, id, name, role, cpu, side) {
+function addEnt(g, id, name, role, cpu, side, skin) {
   const E = ELEVS[side];
   const k = g.ents.filter((e) => e.side === side).length;
   const off = [0, 16, -16][k % 3];
   const px = E.dy !== 0 ? 1 : 0, py = E.dx !== 0 ? 1 : 0;
   g.ents.push({
-    id, name, role, cpu, side,
+    id, name, role, cpu, side, skin: skin || 'default',
     x: (E.tx + E.dx) * T + T / 2 + px * off, y: (E.ty + E.dy) * T + T / 2 + py * off,
-    input: { u: 0, d: 0, l: 0, r: 0 }, alive: true, hasEraser: false, invuln: 0, stun: 0, next: null, repath: 0
+    input: { u: 0, d: 0, l: 0, r: 0 }, alive: true, hasEraser: false,
+    invuln: 0, stun: 0, speedBoost: 0, invisible: 0, item: null, next: null, repath: 0
   });
 }
 
@@ -196,16 +195,30 @@ function startGame(room) {
   const ang = Math.random() * Math.PI * 2, mag = 40 + Math.random() * 80;
   const g = {
     room, grid: generateMaze(), status: 'playing', phase: 'place', placeLeft: PLACE_TIME,
-    time: MATCH_TIME, playT: 0, endAt: 0, pingClock: 0, ents: [],
+    time: MATCH_TIME, playT: 0, endAt: 0, pingClock: 0, ents: [], warps: [], chests: [],
     hintOff: { x: Math.cos(ang) * mag, y: Math.sin(ang) * mag },
     eraser: { x: 0, y: 0, home: { x: 0, y: 0 }, placed: false, carried: false, cool: 0 },
     elev: { open: false, left: 0, door: 0 }
   };
+
+  // ワープ地点作成（2箇所ペア）
+  const w1 = randomSpot(g), w2 = randomSpot(g);
+  g.warps = [
+    { x: w1.x, y: w1.y, target: { x: w2.x, y: w2.y }, cools: new Map() },
+    { x: w2.x, y: w2.y, target: { x: w1.x, y: w1.y }, cools: new Map() }
+  ];
+
+  // 宝箱作成（2個）
+  g.chests = [
+    { x: randomSpot(g).x, y: randomSpot(g).y, opened: false },
+    { x: randomSpot(g).x, y: randomSpot(g).y, opened: false }
+  ];
+
   const sides = shuffle([0, 1, 2, 3]);
   let si = 0;
-  for (const p of list) if (p.assigned === 'runner') addEnt(g, p.id, p.name, 'runner', false, sides[si++ % 4]);
-  for (const p of list) if (p.assigned === 'oni') addEnt(g, p.id, p.name, 'oni', false, sides[si++ % 4]);
-  if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu1', 'CPU鬼', 'oni', true, sides[si++ % 4]);
+  for (const p of list) if (p.assigned === 'runner') addEnt(g, p.id, p.name, 'runner', false, sides[si++ % 4], p.skin);
+  for (const p of list) if (p.assigned === 'oni') addEnt(g, p.id, p.name, 'oni', false, sides[si++ % 4], p.skin);
+  if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu1', 'CPU鬼', 'oni', true, sides[si++ % 4], 'default');
 
   room.game = g; room.state = 'playing';
   for (const e of g.ents) if (!e.cpu) {
@@ -263,7 +276,8 @@ function moveByInput(g, e, dt) {
   const ix = e.input.r - e.input.l, iy = e.input.d - e.input.u;
   if (!ix && !iy) return;
   const len = Math.hypot(ix, iy);
-  const sp = e.role === 'oni' ? SPEED.oni : (e.hasEraser ? SPEED.carrier : SPEED.runner);
+  let sp = e.role === 'oni' ? SPEED.oni : (e.hasEraser ? SPEED.carrier : SPEED.runner);
+  if (e.speedBoost > 0) sp *= 1.35;
   moveEnt(g, e, (ix / len) * sp * dt, (iy / len) * sp * dt);
 }
 function cpuMove(g, e, dt, tgt, angry) {
@@ -281,7 +295,7 @@ function cpuMove(g, e, dt, tgt, angry) {
 
 function stepPlace(g, dt) {
   g.placeLeft -= dt;
-  for (const e of g.ents) if (e.role === 'oni' && !e.cpu) moveByInput(g, e, dt);   // 逃げ側は待機、鬼は自由に動いて設置場所を選ぶ
+  for (const e of g.ents) if (e.role === 'oni' && !e.cpu) moveByInput(g, e, dt);
   const er = g.eraser;
   if (!er.placed) {
     const human = g.ents.find((e) => e.role === 'oni' && !e.cpu);
@@ -300,7 +314,17 @@ function stepPlace(g, dt) {
 
 function step(g, dt) {
   if (g.status !== 'playing') return;
-  for (const e of g.ents) { if (e.invuln > 0) e.invuln -= dt; if (e.stun > 0) e.stun -= dt; }
+  for (const e of g.ents) {
+    if (e.invuln > 0) e.invuln -= dt;
+    if (e.stun > 0) e.stun -= dt;
+    if (e.speedBoost > 0) e.speedBoost -= dt;
+    if (e.invisible > 0) e.invisible -= dt;
+  }
+  for (const w of g.warps) {
+    for (const [id, c] of w.cools.entries()) {
+      if (c > 0) w.cools.set(id, c - dt);
+    }
+  }
   if (!g.ents.some((e) => e.role === 'runner' && e.alive)) { g.status = 'oniwin'; return; }
   if (g.phase === 'place') { stepPlace(g, dt); return; }
 
@@ -318,6 +342,32 @@ function step(g, dt) {
     if (!e.cpu) {
       if (e.role === 'oni' && e.stun > 0) continue;
       moveByInput(g, e, dt);
+
+      // ワープ判定
+      for (const w of g.warps) {
+        if (Math.hypot(e.x - w.x, e.y - w.y) < 25) {
+          const cl = w.cools.get(e.id) || 0;
+          if (cl <= 0) {
+            e.x = w.target.x; e.y = w.target.y;
+            w.cools.set(e.id, 5.0); // 5秒クールタイム
+            if (!e.cpu) io.to(e.id).emit('ev', '🌀 ワープした！（5秒間再ワープ不可）');
+          }
+        }
+      }
+
+      // 宝箱判定（逃げ側限定）
+      if (e.role === 'runner' && !e.item) {
+        for (const ch of g.chests) {
+          if (!ch.opened && Math.hypot(e.x - ch.x, e.y - ch.y) < 25) {
+            ch.opened = true;
+            const items = ['stun', 'speed', 'invis'];
+            e.item = items[Math.floor(Math.random() * items.length)];
+            const names = { stun: 'スタングレネード', speed: 'スピードブーツ', invis: '透明化スーツ' };
+            io.to(e.id).emit('ev', '🎁 宝箱から「' + names[e.item] + '」を手に入れた！ (Qキーで使用)');
+          }
+        }
+      }
+
     } else if (e.stun <= 0 && runnersAlive.length) {
       let tgt = carrier && carrier.role === 'runner' ? carrier : null;
       if (!tgt) {
@@ -340,7 +390,7 @@ function step(g, dt) {
       }
     }
   }
-  // 奪還（落ちた消しゴムに鬼が触れると設置場所へ戻る）
+  // 奪還
   if (!er.carried && er.cool <= 0 && Math.hypot(er.x - er.home.x, er.y - er.home.y) > 10) {
     for (const o of g.ents) {
       if (o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - er.x, o.y - er.y) < ONI_R + 22) {
@@ -348,7 +398,7 @@ function step(g, dt) {
       }
     }
   }
-  // 脱出：自分がスポーンしたエレベーターだけ
+  // 脱出
   for (const r of runnersAlive) {
     if (!r.hasEraser || !el.open || el.door <= DOOR_PASS) continue;
     const c = elevCenter(r.side);
@@ -358,7 +408,7 @@ function step(g, dt) {
   for (const o of g.ents) {
     if (o.role !== 'oni' || o.stun > 0) continue;
     for (const r of runnersAlive) {
-      if (!r.alive || r.invuln > 0) continue;
+      if (!r.alive || r.invuln > 0 || r.invisible > 0) continue;
       if (Math.hypot(r.x - o.x, r.y - o.y) < RUNNER_R + ONI_R - 4) {
         if (r.hasEraser) {
           dropEraser(g, r); r.invuln = INVULN; o.stun = STUN;
@@ -371,7 +421,7 @@ function step(g, dt) {
   if (!g.ents.some((e) => e.role === 'runner' && e.alive)) g.status = 'oniwin';
 }
 
-// ================= 受信者ごとの状態（見えない情報は送らない）=================
+// ================= スナップショット送信 =================
 function snapshot(g, r) {
   let ref = r;
   if (r.role === 'runner' && !r.alive) ref = g.ents.find((e) => e.role === 'runner' && e.alive) || r;
@@ -379,7 +429,8 @@ function snapshot(g, r) {
   const ents = [];
   for (const e of g.ents) {
     if (e === r) continue;
-    const info = { id: e.id, n: e.name, x: e.x, y: e.y, role: e.role, al: e.alive, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side };
+    if (e.invisible > 0 && e.role !== r.role) continue; // 透明化中は敵に見えない
+    const info = { id: e.id, n: e.name, x: e.x, y: e.y, role: e.role, al: e.alive, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, skin: e.skin };
     if (e.role === r.role) ents.push(info);
     else if (e.alive && Math.hypot(e.x - ref.x, e.y - ref.y) < ghost && losClear(g, ref.x, ref.y, e.x, e.y)) ents.push(info);
   }
@@ -396,17 +447,21 @@ function snapshot(g, r) {
     const c = g.ents.find((e) => e.hasEraser);
     if (c) ping = { x: c.x, y: c.y };
   }
+  // 宝箱の位置（まだ開いていないもの）
+  const chests = g.chests.filter((c) => !c.opened).map((c) => ({ x: c.x, y: c.y }));
+  const warps = g.warps.map((w) => ({ x: w.x, y: w.y }));
+
   return {
     s: g.status, ph: g.phase, pl: Math.max(0, g.placeLeft), placed: E.placed,
     t: g.time, slide: g.slide || 0, role: r.role, side: ref.side,
-    me: { x: r.x, y: r.y, al: r.alive, e: r.hasEraser, inv: r.invuln > 0, st: r.stun > 0 },
-    cam: { x: ref.x, y: ref.y }, ents, ping, er, hint,
+    me: { x: r.x, y: r.y, al: r.alive, e: r.hasEraser, inv: r.invuln > 0, st: r.stun > 0, item: r.item, speed: r.speedBoost > 0, invis: r.invisible > 0 },
+    cam: { x: ref.x, y: ref.y }, ents, ping, er, hint, chests, warps,
     el: { open: g.elev.open, left: g.elev.left, door: g.elev.door },
     n: g.ents.filter((e) => e.role === 'runner' && e.alive).length
   };
 }
 
-// ================= 60fps ループ =================
+// ================= 60fpsループ =================
 let last = process.hrtime.bigint();
 setInterval(() => {
   const now = process.hrtime.bigint();
@@ -426,7 +481,6 @@ setInterval(() => {
       const snap = snapshot(g, e);
       if (changed) s.emit('state', snap); else s.volatile.emit('state', snap);
     }
-    if (g.status !== 'playing' && Date.now() > g.endAt) toLobby(room);
   }
 }, 1000 / 60);
 
@@ -436,14 +490,14 @@ io.on('connection', (socket) => {
     leaveRoom(socket.id);
     const room = makeRoom(socket);
     if (!room) return;
-    addPlayer(room, socket, d && d.name, 'auto');
+    addPlayer(room, socket, d && d.name, 'auto', d && d.skin);
     sendLobby(room);
   });
-  socket.on('solo', (d) => {                       // CPUと戦う：1人で即スタート（鬼はCPU）
+  socket.on('solo', (d) => {
     leaveRoom(socket.id);
     const room = makeRoom(socket);
     if (!room) return;
-    addPlayer(room, socket, d && d.name, 'runner');
+    addPlayer(room, socket, d && d.name, 'runner', d && d.skin);
     startGame(room);
   });
   socket.on('join', (d) => {
@@ -453,13 +507,19 @@ io.on('connection', (socket) => {
     if (!room) { socket.emit('errmsg', 'そのルームは見つかりません'); return; }
     if (room.players.size >= MAX_PLAYERS && !room.players.has(socket.id)) { socket.emit('errmsg', 'ルームが満員です'); return; }
     leaveRoom(socket.id);
-    addPlayer(room, socket, d && d.name, 'auto');
+    addPlayer(room, socket, d && d.name, 'auto', d && d.skin);
     sendLobby(room);
   });
   socket.on('setRole', (role) => {
     const room = sockRoom.get(socket.id);
     if (!room || room.state !== 'lobby' || !['auto', 'runner', 'oni'].includes(role)) return;
     room.players.get(socket.id).role = role;
+    sendLobby(room);
+  });
+  socket.on('setSkin', (skin) => {
+    const room = sockRoom.get(socket.id);
+    if (!room || room.state !== 'lobby') return;
+    room.players.get(socket.id).skin = skin;
     sendLobby(room);
   });
   socket.on('start', () => {
@@ -473,7 +533,7 @@ io.on('connection', (socket) => {
     const e = room.game.ents.find((x) => x.id === socket.id);
     if (e) e.input = { u: inp.u ? 1 : 0, d: inp.d ? 1 : 0, l: inp.l ? 1 : 0, r: inp.r ? 1 : 0 };
   });
-  socket.on('place', () => {                       // 鬼が消しゴムを設置
+  socket.on('place', () => {
     const room = sockRoom.get(socket.id);
     const g = room && room.game;
     if (!g || g.phase !== 'place' || g.eraser.placed) return;
@@ -481,6 +541,30 @@ io.on('connection', (socket) => {
     if (!o) return;
     if (validSpot(g, o.x, o.y)) placeEraser(g, o.x, o.y);
     else socket.emit('ev', '❌ ここには置けない（エレベーターに近すぎる）');
+  });
+  socket.on('useItem', () => {
+    const room = sockRoom.get(socket.id);
+    const g = room && room.game;
+    if (!g || g.status !== 'playing') return;
+    const e = g.ents.find((x) => x.id === socket.id && x.role === 'runner' && x.alive);
+    if (!e || !e.item) return;
+    const item = e.item; e.item = null;
+    if (item === 'speed') {
+      e.speedBoost = 10;
+      io.to(e.id).emit('ev', '⚡ スピードブーツ発動！移動速度アップ（10秒）');
+    } else if (item === 'invis') {
+      e.invisible = 10;
+      io.to(e.id).emit('ev', '👻 透明化スーツ発動！姿が消えた（10秒）');
+    } else if (item === 'stun') {
+      // 近くの鬼をスタン
+      let hit = false;
+      for (const o of g.ents) {
+        if (o.role === 'oni' && Math.hypot(o.x - e.x, o.y - e.y) < 220) {
+          o.stun = 3.5; hit = true;
+        }
+      }
+      io.to(e.id).emit('ev', hit ? '💫 スタングレネード炸裂！鬼が怯んだ！' : '💫 グネードを投げたが周囲に鬼はいなかった…');
+    }
   });
   socket.on('leave', () => leaveRoom(socket.id));
   socket.on('disconnect', () => leaveRoom(socket.id));
