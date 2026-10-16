@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>消しゴム奪取＆エレベーター脱出 - 均一迷路編</title>
+    <title>消しゴム奪取＆エレベーター脱出 - ブロック迷路編</title>
     <style>
         body {
             margin: 0;
@@ -66,8 +66,8 @@
 
 <div id="screen">
     <div id="lobby" class="panel">
-        <h1>消しゴム奪取：迷路からの脱出</h1>
-        <p>最奥にある消しゴムを奪って、最下部中央のエレベーターへ駆け込め！鬼に捕まると消しゴムを落としてしまうぞ。</p>
+        <h1>消しゴム奪取：ブロック迷路脱出</h1>
+        <p>障害物ブロックの間を縫って最奥の消しゴムを奪い、最下部中央のエレベーターへ滑り込め！</p>
         <input type="text" id="playerName" placeholder="プレイヤー名を入力" value="プレイヤー1">
         <div>
             <button class="btn-primary" onclick="startGame()">ゲームスタート</button>
@@ -92,33 +92,29 @@
 
     const MAP_WIDTH = 2000;
     const MAP_HEIGHT = 2000;
-    const CAMERA_ZOOM = 1.4; // ズーム倍率
+    const CAMERA_ZOOM = 1.4;
 
     const walls = [
         { x: 0, y: 0, w: MAP_WIDTH, h: 40 },
         { x: 0, y: MAP_HEIGHT - 40, w: MAP_WIDTH, h: 40 },
         { x: 0, y: 0, w: 40, h: MAP_HEIGHT },
         { x: MAP_WIDTH - 40, y: 0, w: 40, h: MAP_HEIGHT },
-        { x: 160, y: 0, w: 40, h: 400 },
-        { x: 160, y: 520, w: 40, h: 1040 },
-        { x: 320, y: 160, w: 40, h: 1400 },
-        { x: 480, y: 0, w: 40, h: 400 },
-        { x: 480, y: 520, w: 40, h: 1200 },
-        { x: 640, y: 160, w: 40, h: 1400 },
-        { x: 800, y: 320, w: 40, h: 1200 },
-        { x: 960, y: 0, w: 40, h: 1400 },
-        { x: 1120, y: 160, w: 40, h: 1400 },
-        { x: 1280, y: 320, w: 40, h: 1200 },
-        { x: 1440, y: 0, w: 40, h: 1400 },
-        { x: 1600, y: 160, w: 40, h: 1400 },
-        { x: 1800, y: 400, w: 40, h: 1200 },
-        { x: 160, y: 400, w: 320, h: 40 },
-        { x: 480, y: 800, w: 320, h: 40 },
-        { x: 200, y: 1200, w: 280, h: 40 },
-        { x: 640, y: 1200, w: 320, h: 40 },
-        { x: 960, y: 800, w: 320, h: 40 },
-        { x: 1280, y: 400, w: 320, h: 40 },
-        { x: 1440, y: 1200, w: 360, h: 40 }
+        { x: 200, y: 200, w: 160, h: 160 },
+        { x: 600, y: 200, w: 160, h: 160 },
+        { x: 1000, y: 200, w: 160, h: 160 },
+        { x: 1400, y: 200, w: 160, h: 160 },
+        { x: 200, y: 600, w: 160, h: 160 },
+        { x: 600, y: 600, w: 160, h: 160 },
+        { x: 1000, y: 600, w: 160, h: 160 },
+        { x: 1400, y: 600, w: 160, h: 160 },
+        { x: 200, y: 1000, w: 160, h: 160 },
+        { x: 600, y: 1000, w: 160, h: 160 },
+        { x: 1000, y: 1000, w: 160, h: 160 },
+        { x: 1400, y: 1000, w: 160, h: 160 },
+        { x: 200, y: 1400, w: 160, h: 160 },
+        { x: 600, y: 1400, w: 160, h: 160 },
+        { x: 1000, y: 1400, w: 160, h: 160 },
+        { x: 1400, y: 1400, w: 160, h: 160 }
     ];
 
     let player = null;
@@ -173,15 +169,16 @@
         ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
         ctx.translate(-player.x, -player.y);
 
-        // 床の描画
+        // 床
         ctx.fillStyle = '#1e1e1e';
         ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
-        // 整えられた均一な壁の描画
-        ctx.fillStyle = '#3d3d3d';
+        // ブロック障害物の描画
         for (let w of walls) {
+            ctx.fillStyle = '#3d3d3d';
             ctx.fillRect(w.x, w.y, w.w, w.h);
             ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
             ctx.strokeRect(w.x, w.y, w.w, w.h);
         }
 
@@ -194,7 +191,7 @@
         ctx.textAlign = 'center';
         ctx.fillText(el.isOpen ? `脱出口 (${Math.ceil(el.timer/60)}s)` : 'エレベーター閉', el.x, el.y - 35);
 
-        // 消しゴム（最奥の最も遠い場所）
+        // 消しゴム（最奥の上部中央）
         let e = gameData.eraser;
         if (!e.isTaken) {
             ctx.fillStyle = '#ffa502';
@@ -238,15 +235,15 @@
 
         ctx.restore();
 
-        // ステータス表示
+        // HUD
         if (player.escaped) {
             hudText.innerHTML = '<span style="color:#2ed573; font-size:18px;">🎉 脱出成功！おめでとう！</span>';
         } else if (gameData.gameOver) {
             hudText.innerHTML = '<span style="color:#ff4757; font-size:18px;">💥 捕まってしまった…ゲームオーバー</span>';
         } else if (player.hasEraser) {
-            hudText.innerHTML = '📦 消しゴムをゲット！最下部の中央エレベーターへ急げ！！';
+            hudText.innerHTML = '📦 消しゴムをゲット！最下部中央のエレベーターへ急げ！！';
         } else {
-            hudText.innerHTML = '🏃 マップ最奥にある消しゴムを目指して進め！';
+            hudText.innerHTML = '🏃 ブロックの間を抜けて一番奥の消しゴムを奪え！';
         }
     }
 
