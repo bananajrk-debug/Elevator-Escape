@@ -135,13 +135,20 @@ function newCode() {
 function cleanName(n) { return String(n || '').trim().slice(0, 12) || 'プレイヤー'; }
 function sendLobby(room) {
   const players = [...room.players.values()].map((p) => ({ id: p.id, name: p.name, role: p.role, skin: p.skin }));
-  for (const id of room.players.keys()) io.to(id).emit('lobby', { code: room.code, state: room.state, host: room.host, players, you: id });
+  for (const id of room.players.keys()) io.to(id).emit('lobby', { code: room.code, state: room.state, host: room.host, players, you: id, isSolo: room.isSolo });
 }
-function toLobby(room) { room.state = 'lobby'; room.game = null; sendLobby(room); }
-function makeRoom(socket) {
+function handleGameEnd(room) {
+  if (room.isSolo) {
+    for (const id of room.players.keys()) io.to(id).emit('toTitle');
+    rooms.delete(room.code);
+  } else {
+    room.state = 'lobby'; room.game = null; sendLobby(room);
+  }
+}
+function makeRoom(socket, isSolo = false) {
   const code = newCode();
   if (!code) { socket.emit('errmsg', 'ルームを作れませんでした'); return null; }
-  const room = { code, players: new Map(), host: socket.id, state: 'lobby', game: null };
+  const room = { code, players: new Map(), host: socket.id, state: 'lobby', game: null, isSolo };
   rooms.set(code, room);
   return room;
 }
@@ -165,7 +172,7 @@ function leaveRoom(id) {
   }
   if (room.players.size === 0) { rooms.delete(room.code); return; }
   if (room.host === id) room.host = room.players.keys().next().value;
-  sendLobby(room);
+  if (!room.isSolo) sendLobby(room);
 }
 
 // ================= ゲーム開始 =================
@@ -201,14 +208,12 @@ function startGame(room) {
     elev: { open: false, left: 0, door: 0 }
   };
 
-  // ワープ地点作成（2箇所ペア）
   const w1 = randomSpot(g), w2 = randomSpot(g);
   g.warps = [
     { x: w1.x, y: w1.y, target: { x: w2.x, y: w2.y }, cools: new Map() },
     { x: w2.x, y: w2.y, target: { x: w1.x, y: w1.y }, cools: new Map() }
   ];
 
-  // 宝箱作成（2個）
   g.chests = [
     { x: randomSpot(g).x, y: randomSpot(g).y, opened: false },
     { x: randomSpot(g).x, y: randomSpot(g).y, opened: false }
@@ -222,9 +227,9 @@ function startGame(room) {
 
   room.game = g; room.state = 'playing';
   for (const e of g.ents) if (!e.cpu) {
-    io.to(e.id).emit('init', { grid: g.grid.map((r) => r.join('')), T, N, map: MAP, elevs: ELEVS, cfg: CFG, role: e.role, side: e.side, name: e.name, matchTime: MATCH_TIME, placeTime: PLACE_TIME });
+    io.to(e.id).emit('init', { grid: g.grid.map((r) => r.join('')), T, N, map: MAP, elevs: ELEVS, cfg: CFG, role: e.role, side: e.side, name: e.name, matchTime: MATCH_TIME, placeTime: PLACE_TIME, isSolo: room.isSolo });
   }
-  sendLobby(room);
+  if (!room.isSolo) sendLobby(room);
 }
 
 // ================= ゲームロジック =================
@@ -343,31 +348,16 @@ function step(g, dt) {
       if (e.role === 'oni' && e.stun > 0) continue;
       moveByInput(g, e, dt);
 
-      // ワープ判定
       for (const w of g.warps) {
         if (Math.hypot(e.x - w.x, e.y - w.y) < 25) {
           const cl = w.cools.get(e.id) || 0;
           if (cl <= 0) {
             e.x = w.target.x; e.y = w.target.y;
-            w.cools.set(e.id, 5.0); // 5秒クールタイム
-            if (!e.cpu) io.to(e.id).emit('ev', '🌀 ワープした！（5秒間再ワープ不可）');
+            w.cools.set(e.id, 5.0);
+            io.to(e.id).emit('ev', '🌀 ワープした！（5秒間再ワープ不可）');
           }
         }
       }
-
-      // 宝箱判定（逃げ側限定）
-      if (e.role === 'runner' && !e.item) {
-        for (const ch of g.chests) {
-          if (!ch.opened && Math.hypot(e.x - ch.x, e.y - ch.y) < 25) {
-            ch.opened = true;
-            const items = ['stun', 'speed', 'invis'];
-            e.item = items[Math.floor(Math.random() * items.length)];
-            const names = { stun: 'スタングレネード', speed: 'スピードブーツ', invis: '透明化スーツ' };
-            io.to(e.id).emit('ev', '🎁 宝箱から「' + names[e.item] + '」を手に入れた！ (Qキーで使用)');
-          }
-        }
-      }
-
     } else if (e.stun <= 0 && runnersAlive.length) {
       let tgt = carrier && carrier.role === 'runner' ? carrier : null;
       if (!tgt) {
@@ -379,7 +369,6 @@ function step(g, dt) {
   }
   if (carrier) { er.x = carrier.x; er.y = carrier.y; }
 
-  // 取得
   if (!er.carried && er.cool <= 0) {
     for (const r of runnersAlive) {
       if (Math.hypot(r.x - er.x, r.y - er.y) < RUNNER_R + 22) {
@@ -390,7 +379,6 @@ function step(g, dt) {
       }
     }
   }
-  // 奪還
   if (!er.carried && er.cool <= 0 && Math.hypot(er.x - er.home.x, er.y - er.home.y) > 10) {
     for (const o of g.ents) {
       if (o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - er.x, o.y - er.y) < ONI_R + 22) {
@@ -398,13 +386,11 @@ function step(g, dt) {
       }
     }
   }
-  // 脱出
   for (const r of runnersAlive) {
     if (!r.hasEraser || !el.open || el.door <= DOOR_PASS) continue;
     const c = elevCenter(r.side);
     if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) { g.status = 'runwin'; g.slide = el.left; return; }
   }
-  // 捕獲
   for (const o of g.ents) {
     if (o.role !== 'oni' || o.stun > 0) continue;
     for (const r of runnersAlive) {
@@ -421,7 +407,21 @@ function step(g, dt) {
   if (!g.ents.some((e) => e.role === 'runner' && e.alive)) g.status = 'oniwin';
 }
 
-// ================= スナップショット送信 =================
+// 宝箱を開ける処理
+function openChest(g, player) {
+  if (player.role !== 'runner' || player.item || !player.alive) return;
+  for (const ch of g.chests) {
+    if (!ch.opened && Math.hypot(player.x - ch.x, player.y - ch.y) < 55) {
+      ch.opened = true;
+      const items = ['stun', 'speed', 'invis'];
+      player.item = items[Math.floor(Math.random() * items.length)];
+      const names = { stun: 'スタングレネード', speed: 'スピードブーツ', invis: '透明化スーツ' };
+      io.to(player.id).emit('ev', '🎁 宝箱を開けて「' + names[player.item] + '」を手に入れた！ (Qキーで使用)');
+      break;
+    }
+  }
+}
+
 function snapshot(g, r) {
   let ref = r;
   if (r.role === 'runner' && !r.alive) ref = g.ents.find((e) => e.role === 'runner' && e.alive) || r;
@@ -429,7 +429,7 @@ function snapshot(g, r) {
   const ents = [];
   for (const e of g.ents) {
     if (e === r) continue;
-    if (e.invisible > 0 && e.role !== r.role) continue; // 透明化中は敵に見えない
+    if (e.invisible > 0 && e.role !== r.role) continue;
     const info = { id: e.id, n: e.name, x: e.x, y: e.y, role: e.role, al: e.alive, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, skin: e.skin };
     if (e.role === r.role) ents.push(info);
     else if (e.alive && Math.hypot(e.x - ref.x, e.y - ref.y) < ghost && losClear(g, ref.x, ref.y, e.x, e.y)) ents.push(info);
@@ -447,21 +447,33 @@ function snapshot(g, r) {
     const c = g.ents.find((e) => e.hasEraser);
     if (c) ping = { x: c.x, y: c.y };
   }
-  // 宝箱の位置（まだ開いていないもの）
   const chests = g.chests.filter((c) => !c.opened).map((c) => ({ x: c.x, y: c.y }));
   const warps = g.warps.map((w) => ({ x: w.x, y: w.y }));
+
+  // 逃げ側用に鬼のおおよそのエリア円（中心から少しずらした位置）を渡す
+  let oniAreas = [];
+  if (r.role === 'runner') {
+    for (const e of g.ents) {
+      if (e.role === 'oni' && e.alive) {
+        // 実際の位置からランダムなオフセット（半径100〜180px程度の不確定エリア）
+        const seed = Math.floor(g.playT * 2) + e.x;
+        const ox = e.x + Math.sin(seed) * 140;
+        const oy = e.y + Math.cos(seed) * 140;
+        oniAreas.push({ x: ox, y: oy });
+      }
+    }
+  }
 
   return {
     s: g.status, ph: g.phase, pl: Math.max(0, g.placeLeft), placed: E.placed,
     t: g.time, slide: g.slide || 0, role: r.role, side: ref.side,
     me: { x: r.x, y: r.y, al: r.alive, e: r.hasEraser, inv: r.invuln > 0, st: r.stun > 0, item: r.item, speed: r.speedBoost > 0, invis: r.invisible > 0 },
-    cam: { x: ref.x, y: ref.y }, ents, ping, er, hint, chests, warps,
+    cam: { x: ref.x, y: ref.y }, ents, ping, er, hint, chests, warps, oniAreas,
     el: { open: g.elev.open, left: g.elev.left, door: g.elev.door },
     n: g.ents.filter((e) => e.role === 'runner' && e.alive).length
   };
 }
 
-// ================= 60fpsループ =================
 let last = process.hrtime.bigint();
 setInterval(() => {
   const now = process.hrtime.bigint();
@@ -481,21 +493,21 @@ setInterval(() => {
       const snap = snapshot(g, e);
       if (changed) s.emit('state', snap); else s.volatile.emit('state', snap);
     }
+    if (g.status !== 'playing' && Date.now() > g.endAt) handleGameEnd(room);
   }
 }, 1000 / 60);
 
-// ================= Socket.io =================
 io.on('connection', (socket) => {
   socket.on('create', (d) => {
     leaveRoom(socket.id);
-    const room = makeRoom(socket);
+    const room = makeRoom(socket, false);
     if (!room) return;
     addPlayer(room, socket, d && d.name, 'auto', d && d.skin);
     sendLobby(room);
   });
   socket.on('solo', (d) => {
     leaveRoom(socket.id);
-    const room = makeRoom(socket);
+    const room = makeRoom(socket, true);
     if (!room) return;
     addPlayer(room, socket, d && d.name, 'runner', d && d.skin);
     startGame(room);
@@ -542,6 +554,13 @@ io.on('connection', (socket) => {
     if (validSpot(g, o.x, o.y)) placeEraser(g, o.x, o.y);
     else socket.emit('ev', '❌ ここには置けない（エレベーターに近すぎる）');
   });
+  socket.on('interactChest', () => {
+    const room = sockRoom.get(socket.id);
+    const g = room && room.game;
+    if (!g || g.status !== 'playing') return;
+    const e = g.ents.find((x) => x.id === socket.id);
+    if (e) openChest(g, e);
+  });
   socket.on('useItem', () => {
     const room = sockRoom.get(socket.id);
     const g = room && room.game;
@@ -556,7 +575,6 @@ io.on('connection', (socket) => {
       e.invisible = 10;
       io.to(e.id).emit('ev', '👻 透明化スーツ発動！姿が消えた（10秒）');
     } else if (item === 'stun') {
-      // 近くの鬼をスタン
       let hit = false;
       for (const o of g.ents) {
         if (o.role === 'oni' && Math.hypot(o.x - e.x, o.y - e.y) < 220) {
