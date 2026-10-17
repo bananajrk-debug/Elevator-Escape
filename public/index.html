@@ -40,7 +40,7 @@
   /* ---------- スタート画面 ---------- */
   #title { align-items: center; justify-content: center; flex-direction: column; text-align: center; }
   
-  /* タイトル文字：ドス黒いモヤ（シャドウ）を消してスッキリ綺麗な金色グラデーションに修正 */
+  /* タイトル文字：モヤなしの綺麗な金色グラデーション */
   .logo { position: relative; font-size: clamp(34px, 7vw, 76px); font-weight: 900; font-style: italic; line-height: 1.05; background: linear-gradient(180deg, #fff3a1 0%, #ffd700 50%, #e6ca65 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
   .logo small { display: block; font-size: .4em; letter-spacing: 4px; color: #ffd700; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
   
@@ -540,6 +540,7 @@ function frame(now) {
   const sh = danger * (state.me.e ? 4 : 1.5);
   SX = sh ? (Math.random() - 0.5) * sh * 2 : 0; SY = sh ? (Math.random() - 0.5) * sh * 2 : 0;
 
+  // ===== パス1：ワールド =====
   withWorld(() => {
     ctx.drawImage(mazeCanvas, 0, 0);
     for (let i = 0; i < 4; i++) {
@@ -576,14 +577,32 @@ function frame(now) {
       ctx.restore();
     }
     for (const e of state.ents) {
-      const v = views[e.id];
-      drawActor(e, v, 1, false, now);
+      const v = views[e.id]; let a = 1;
+      if (e.role !== myRole) { const d = Math.hypot(v.x - camV.x, v.y - camV.y); a = clamp((lightR * 0.8 - d) / (lightR * 0.35), 0, 1); if (a <= 0.02) continue; }
+      drawActor(e, v, a, false, now);
     }
     if (state.me.al || myRole === 'oni') drawActor({ role: myRole, al: true, hp: state.me.hp, e: state.me.e, st: state.me.st, inv: state.me.inv, n: myName, skin: mySkin }, meV, state.me.invis ? 0.3 : 1, true, now);
   });
 
+  // ===== 暗闇・靄（ゲーム内のドス黒い影を元通り復活！） =====
   const cx = cv.width / 2 + SX, cy = cv.height / 2 + SY;
+  const R = lightR * Z * (1 + Math.sin(now / 400) * 0.015);
+  const grd = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R);
+  grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(0.6, 'rgba(0,0,0,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0.9)');
+  ctx.fillStyle = grd; ctx.fillRect(0, 0, cv.width, cv.height);
 
+  // ===== パス2：闇の中の影（シルエット復活！） =====
+  withWorld(() => {
+    for (const e of state.ents) {
+      if (e.role === myRole) continue;
+      const v = views[e.id], d = Math.hypot(v.x - camV.x, v.y - camV.y);
+      const up = clamp((d - lightR * 0.5) / (lightR * 0.3), 0, 1), down = clamp((ghostR - d) / (ghostR - lightR * 0.9), 0, 1);
+      const a = 0.62 * up * down;
+      if (a > 0.02) drawSil(e, v, a, now);
+    }
+  });
+
+  // 消しゴムの方向を示す三角形インジケーター
   if (myRole === 'runner' && state.er && !state.er.c && state.er.x != null) {
     const p = w2s(state.er.x, state.er.y);
     if (p.x < 40 || p.x > cv.width - 40 || p.y < 40 || p.y > cv.height - 40) {
@@ -594,6 +613,7 @@ function frame(now) {
     }
   }
 
+  // エレベーターの光
   if (el.open) {
     for (let i = 0; i < 4; i++) {
       if (myRole === 'runner' && i !== state.side) continue;
