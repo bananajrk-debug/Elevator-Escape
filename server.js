@@ -187,7 +187,7 @@ function addEnt(g, id, name, role, cpu, side, skin) {
     id, name, role, cpu, side, skin: skin || 'default',
     x: spawnX, y: spawnY, spawnX, spawnY,
     input: { u: 0, d: 0, l: 0, r: 0 }, alive: true, hp: 100, hasEraser: false,
-    invuln: 0, stun: 0, speedBoost: 0, invisible: 0, item: null, next: null, repath: 0
+    invuln: 0, stun: 0, speedBoost: 0, invisible: 0, item: null, next: null, repath: 0, escaping: 0
   });
 }
 
@@ -207,8 +207,7 @@ function startGame(room) {
     time: MATCH_TIME, playT: 0, endAt: 0, pingClock: 0, ents: [], warps: [], chests: [], potions: [],
     hintOff: { x: Math.cos(ang) * mag, y: Math.sin(ang) * mag },
     eraser: { x: 0, y: 0, home: { x: 0, y: 0 }, placed: false, carried: false, cool: 0 },
-    elev: { open: false, left: 0, door: 0 },
-    escapeTimer: 0, escapingSide: 0
+    elev: { open: false, left: 0, door: 0 }
   };
 
   const w1 = randomSpot(g), w2 = randomSpot(g);
@@ -328,22 +327,33 @@ function stepPlace(g, dt) {
 function step(g, dt) {
   if (g.status !== 'playing') return;
 
-  // 脱出演出フェーズ（5秒間のタイマー処理）
-  if (g.status === 'escaping') {
-    g.escapeTimer -= dt;
-    if (g.escapeTimer <= 0) {
-      g.status = 'runwin';
-      g.slide = g.elev.left;
-    }
-    return;
-  }
-
   for (const e of g.ents) {
     if (e.invuln > 0) e.invuln -= dt;
     if (e.stun > 0) e.stun -= dt;
     if (e.speedBoost > 0) e.speedBoost -= dt;
     if (e.invisible > 0) e.invisible -= dt;
+
+    // 脱出カウントダウン中（5秒間）の処理
+    if (e.escaping > 0) {
+      e.escaping -= dt;
+      // 鬼が5秒以内にそのエレベーターに近づいて攻撃（接触）したら脱出阻止！
+      const c = elevCenter(e.side);
+      for (const o of g.ents) {
+        if (o.role === 'oni' && Math.hypot(o.x - c.x, o.y - c.y) < ONI_R + T / 2) {
+          e.escaping = 0;
+          dropEraser(g, e);
+          ev(g, '👹 鬼がエレベーターに駆けつけて脱出を阻止した！消しゴムが落とされた！');
+          break;
+        }
+      }
+      if (e.escaping <= 0 && e.alive) {
+        g.status = 'runwin';
+        g.slide = g.elev.left;
+        return;
+      }
+    }
   }
+
   for (const w of g.warps) {
     for (const [id, c] of w.cools.entries()) {
       if (c > 0) w.cools.set(id, c - dt);
@@ -362,7 +372,7 @@ function step(g, dt) {
   const carrier = g.ents.find((e) => e.hasEraser);
 
   for (const e of g.ents) {
-    if (!e.alive) continue;
+    if (!e.alive || e.escaping > 0) continue;
 
     if (e.role === 'runner' && e.item === 'stun') {
       for (const o of g.ents) {
@@ -429,23 +439,20 @@ function step(g, dt) {
     }
   }
   
-  // エレベーター到達時の脱出演出トリガー（5秒タイマーを設定）
+  // エレベーター到達時：ゲームは続行しつつ、そのプレイヤーの5秒脱出カウントダウンを開始
   for (const r of runnersAlive) {
-    if (!r.hasEraser || !el.open || el.door <= DOOR_PASS) continue;
+    if (!r.hasEraser || !el.open || el.door <= DOOR_PASS || r.escaping > 0) continue;
     const c = elevCenter(r.side);
     if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) {
-      g.status = 'escaping';
-      g.escapeTimer = 5.0; // 5秒間の脱出・閉扉カウントダウン演出
-      g.escapingSide = r.side;
-      ev(g, '🚪 ' + r.name + ' がエレベーターに飛び込んだ！5秒後にドアが完全に閉まる…！');
-      return;
+      r.escaping = 5.0; // 5秒間の脱出・閉扉カウントダウン
+      ev(g, '🚪 ' + r.name + ' がエレベーターに入った！5秒後に脱出成功…（鬼は阻止せよ！）');
     }
   }
 
   for (const o of g.ents) {
     if (o.role !== 'oni' || o.stun > 0) continue;
     for (const r of runnersAlive) {
-      if (!r.alive || r.invuln > 0 || r.invisible > 0) continue;
+      if (!r.alive || r.invuln > 0 || r.invisible > 0 || r.escaping > 0) continue;
       if (Math.hypot(r.x - o.x, r.y - o.y) < RUNNER_R + ONI_R - 4) {
         r.hp -= 50;
         r.invuln = INVULN;
@@ -490,7 +497,7 @@ function snapshot(g, r) {
   for (const e of g.ents) {
     if (e === r) continue;
     if (e.invisible > 0 && e.role !== r.role) continue;
-    const info = { id: e.id, n: e.name, x: e.x, y: e.y, role: e.role, al: e.alive, hp: e.hp, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, skin: e.skin };
+    const info = { id: e.id, n: e.name, x: e.x, y: e.y, role: e.role, al: e.alive, hp: e.hp, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, skin: e.skin, escaping: e.escaping };
     if (e.role === r.role) ents.push(info);
     else if (e.alive && Math.hypot(e.x - ref.x, e.y - ref.y) < ghost && losClear(g, ref.x, ref.y, e.x, e.y)) ents.push(info);
   }
@@ -527,9 +534,9 @@ function snapshot(g, r) {
 
   return {
     s: g.status, ph: g.phase, pl: Math.max(0, g.placeLeft), placed: E.placed,
-    t: g.time, slide: g.slide || 0, escapeTimer: g.escapeTimer || 0, escapingSide: g.escapingSide || 0,
+    t: g.time, slide: g.slide || 0,
     role: r.role, side: ref.side,
-    me: { x: r.x, y: r.y, al: r.alive, hp: r.hp, e: r.hasEraser, inv: r.invuln > 0, st: r.stun > 0, item: r.item, speed: r.speedBoost > 0, invis: r.invisible > 0 },
+    me: { x: r.x, y: r.y, al: r.alive, hp: r.hp, e: r.hasEraser, inv: r.invuln > 0, st: r.stun > 0, item: r.item, speed: r.speedBoost > 0, invis: r.invisible > 0, escaping: r.escaping },
     cam: { x: ref.x, y: ref.y }, ents, ping, er, hint, chests, potions, warps, oniAreas,
     el: { open: g.elev.open, left: g.elev.left, door: g.elev.door },
     n: g.ents.filter((e) => e.role === 'runner' && e.alive).length
@@ -614,7 +621,7 @@ io.on('connection', (socket) => {
     const o = g.ents.find((e) => e.id === socket.id && e.role === 'oni');
     if (!o) return;
     if (validSpot(g, o.x, o.y)) placeEraser(g, o.x, o.y);
-    else socket.emit('ev', '❌ ここには置けない（エレベーターに近すぎる）');
+    else socket.emit('errmsg', '❌ ここには置けない');
   });
   socket.on('interactChest', () => {
     const room = sockRoom.get(socket.id);
