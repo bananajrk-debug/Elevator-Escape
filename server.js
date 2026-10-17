@@ -439,12 +439,11 @@ function step(g, dt) {
     }
   }
   
-  // エレベーター到達時：ゲームは続行しつつ、そのプレイヤーの5秒脱出カウントダウンを開始
   for (const r of runnersAlive) {
     if (!r.hasEraser || !el.open || el.door <= DOOR_PASS || r.escaping > 0) continue;
     const c = elevCenter(r.side);
     if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) {
-      r.escaping = 5.0; // 5秒間の脱出・閉扉カウントダウン
+      r.escaping = 5.0;
       ev(g, '🚪 ' + r.name + ' がエレベーターに入った！5秒後に脱出成功…（鬼は阻止せよ！）');
     }
   }
