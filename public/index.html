@@ -436,31 +436,51 @@ function frame(now) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
   if (!inGame || !world || !state) return;
 
-  // ===== 逃げ側プレイヤーがエレベーターに入って脱出カウントダウン中の専用演出 =====
+  // ===== 逃げ側プレイヤーがエレベーターに入って脱出カウントダウン中の演出（鬼の動きと同期） =====
   if (state.me.escaping > 0) {
     ctx.fillStyle = '#0a0618'; ctx.fillRect(0, 0, cv.width, cv.height);
     const cx = cv.width / 2, cy = cv.height / 2;
-    const progress = 1 - (state.me.escaping / 5.0); // 5秒でドアが閉まる
+    const progress = 1 - (state.me.escaping / 5.0); // 5秒でドアが完全に閉まる
     const doorWidth = Math.min(cv.width * 0.45, 320);
     const doorHeight = Math.min(cv.height * 0.65, 480);
-    const closedOffset = (doorWidth / 2) * Math.min(1, progress);
+    
+    // 正しく外側から中央に向かって閉まるオフセット計算
+    const closedOffset = (doorWidth / 2) * progress;
 
     ctx.fillStyle = '#222'; ctx.fillRect(cx - doorWidth, cy - doorHeight/2, doorWidth * 2, doorHeight);
     ctx.fillStyle = '#4ade80'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('🚪 ESCAPE SEQUENCE...', cx, cy - doorHeight/2 - 20);
+    ctx.fillText('🚪 CLOSING DOORS...', cx, cy - doorHeight/2 - 20);
 
+    // 左右のドアが中央に向かってスライドして閉まる
     metalPanel(cx - doorWidth - closedOffset, cy - doorHeight/2, doorWidth, doorHeight);
     metalPanel(cx + closedOffset, cy - doorHeight/2, doorWidth, doorHeight);
 
-    if (progress < 0.95) {
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
-      ctx.beginPath(); ctx.arc(cx - 16, cy, 7, 0, Math.PI*2); ctx.arc(cx + 16, cy, 7, 0, Math.PI*2); ctx.fill();
+    // 鬼の動き（右・左）を同期させて、ドアの隙間から見える目や影を連動させる
+    if (progress < 0.95 && state.ents) {
+      const oniEnt = state.ents.find(e => e.role === 'oni');
+      if (oniEnt) {
+        const E = world.elevs[state.side];
+        const ecx = E.tx * world.T + world.T / 2;
+        const ecy = E.ty * world.T + world.T / 2;
+        // 鬼とエレベーター中心の相対位置から左右のオフセットを計算
+        const diffX = oniEnt.x - ecx;
+        const offsetShift = clamp(diffX * 0.5, -doorWidth * 0.35, doorWidth * 0.35);
+
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+        ctx.beginPath();
+        ctx.arc(cx - 16 + offsetShift, cy, 7, 0, Math.PI*2);
+        ctx.arc(cx + 16 + offsetShift, cy, 7, 0, Math.PI*2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+        ctx.beginPath(); ctx.arc(cx - 16, cy, 7, 0, Math.PI*2); ctx.arc(cx + 16, cy, 7, 0, Math.PI*2); ctx.fill();
+      }
     }
 
     ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 6; ctx.strokeRect(cx - doorWidth, cy - doorHeight/2, doorWidth * 2, doorHeight);
 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('鬼が来るな…！ドア閉鎖まで (残り ' + Math.max(0, state.me.escaping).toFixed(1) + '秒)', cx, cy + doorHeight/2 + 45);
+    ctx.fillText('ドアが閉まるまで耐えろ…！ (残り ' + Math.max(0, state.me.escaping).toFixed(1) + '秒)', cx, cy + doorHeight/2 + 45);
 
     drawMini(now);
     updateHud();
