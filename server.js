@@ -248,6 +248,22 @@ function validSpot(g, x, y) {
   for (let i = 0; i < 4; i++) { const c = elevCenter(i); if (Math.hypot(x - c.x, y - c.y) < PLACE_MIN) return false; }
   return !collides(g, x, y, 10, { role: 'oni', side: -1 });
 }
+
+// 中央（真ん中付近）の通路を優先して消しゴム配置場所を探す
+function centerSpot(g) {
+  const cands = [];
+  const minTile = Math.floor(N / 2) - 4;
+  const maxTile = Math.floor(N / 2) + 4;
+  for (let ty = minTile; ty <= maxTile; ty++) {
+    for (let tx = minTile; tx <= maxTile; tx++) {
+      const x = tx * T + T / 2, y = ty * T + T / 2;
+      if (g.grid[ty][tx] === 0 && validSpot(g, x, y)) cands.push({ x, y });
+    }
+  }
+  if (cands.length > 0) return cands[Math.floor(Math.random() * cands.length)];
+  return randomSpot(g);
+}
+
 function randomSpot(g) {
   const cands = [];
   for (let ty = 0; ty < N; ty++) for (let tx = 0; tx < N; tx++) {
@@ -256,11 +272,12 @@ function randomSpot(g) {
   }
   return cands[Math.floor(Math.random() * cands.length)] || { x: MAP / 2, y: MAP / 2 };
 }
+
 function placeEraser(g, x, y) {
   const er = g.eraser;
   er.x = x; er.y = y; er.home = { x, y }; er.placed = true; er.carried = false; er.cool = 0;
   g.placeLeft = 1.5;
-  ev(g, '📍 消しゴムが迷路のどこかに設置された…');
+  ev(g, '📍 消しゴムが迷路の中央付近に設置された…');
 }
 function dropEraser(g, holder) {
   holder.hasEraser = false;
@@ -311,10 +328,10 @@ function stepPlace(g, dt) {
   const er = g.eraser;
   if (!er.placed) {
     const human = g.ents.find((e) => e.role === 'oni' && !e.cpu);
-    if (!human && g.placeLeft <= PLACE_TIME - 3) { const p = randomSpot(g); placeEraser(g, p.x, p.y); }
+    if (!human && g.placeLeft <= PLACE_TIME - 3) { const p = centerSpot(g); placeEraser(g, p.x, p.y); }
     else if (g.placeLeft <= 0) {
       if (human && validSpot(g, human.x, human.y)) placeEraser(g, human.x, human.y);
-      else { const p = randomSpot(g); placeEraser(g, p.x, p.y); }
+      else { const p = centerSpot(g); placeEraser(g, p.x, p.y); }
     }
   }
   if (er.placed && g.placeLeft <= 0) {
@@ -333,10 +350,8 @@ function step(g, dt) {
     if (e.speedBoost > 0) e.speedBoost -= dt;
     if (e.invisible > 0) e.invisible -= dt;
 
-    // 脱出カウントダウン中（5秒間）の処理
     if (e.escaping > 0) {
       e.escaping -= dt;
-      // 鬼が5秒以内にそのエレベーターに近づいて攻撃（接触）したら脱出阻止！
       const c = elevCenter(e.side);
       for (const o of g.ents) {
         if (o.role === 'oni' && Math.hypot(o.x - c.x, o.y - c.y) < ONI_R + T / 2) {
