@@ -328,7 +328,7 @@ function stepPlace(g, dt) {
 function step(g, dt) {
   if (g.status !== 'playing') return;
 
-  // 脱出演出フェーズ
+  // 脱出演出フェーズ（5秒間のタイマー処理）
   if (g.status === 'escaping') {
     g.escapeTimer -= dt;
     if (g.escapeTimer <= 0) {
@@ -429,15 +429,15 @@ function step(g, dt) {
     }
   }
   
-  // エレベーター到達時の脱出演出トリガー
+  // エレベーター到達時の脱出演出トリガー（5秒タイマーを設定）
   for (const r of runnersAlive) {
     if (!r.hasEraser || !el.open || el.door <= DOOR_PASS) continue;
     const c = elevCenter(r.side);
     if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) {
       g.status = 'escaping';
-      g.escapeTimer = 3.0; // 3秒間の脱出・閉扉演出
+      g.escapeTimer = 5.0; // 5秒間の脱出・閉扉カウントダウン演出
       g.escapingSide = r.side;
-      ev(g, '🚪 ' + r.name + ' がエレベーターに飛び込んだ！ドアが閉まる…！');
+      ev(g, '🚪 ' + r.name + ' がエレベーターに飛び込んだ！5秒後にドアが完全に閉まる…！');
       return;
     }
   }
