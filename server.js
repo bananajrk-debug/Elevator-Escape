@@ -221,8 +221,8 @@ function startGame(room) {
     { x: randomSpot(g).x, y: randomSpot(g).y, opened: false }
   ];
 
+  // 回復薬は1つだけ設置
   g.potions = [
-    { x: randomSpot(g).x, y: randomSpot(g).y, taken: false },
     { x: randomSpot(g).x, y: randomSpot(g).y, taken: false }
   ];
 
@@ -249,7 +249,7 @@ function validSpot(g, x, y) {
   return !collides(g, x, y, 10, { role: 'oni', side: -1 });
 }
 
-// 中央（真ん中付近）の通路を優先して消しゴム配置場所を探す
+// 中央付近のエリアから消しゴムの設置場所を選択
 function centerSpot(g) {
   const cands = [];
   const minTile = Math.floor(N / 2) - 4;
@@ -436,11 +436,20 @@ function step(g, dt) {
   }
   if (carrier) { er.x = carrier.x; er.y = carrier.y; }
 
+  // 消しゴム獲得時の処理（HPは回復せず、大画面告知フラグをセット）
   if (!er.carried && er.cool <= 0) {
     for (const r of runnersAlive) {
       if (Math.hypot(r.x - er.x, r.y - er.y) < RUNNER_R + 22) {
         er.carried = true; r.hasEraser = true;
         el.open = true; el.left = ELEV_OPEN_SEC;
+        
+        // 全員に画面中央ポップアップ通知を送信
+        for (const ent of g.ents) {
+          if (!ent.cpu) {
+            if (ent.role === 'runner') io.to(ent.id).emit('eraserGot', 'runner', r.name);
+            else io.to(ent.id).emit('eraserGot', 'oni', r.name);
+          }
+        }
         ev(g, '📦 ' + r.name + ' が消しゴムを奪った！エレベーターが開く');
         break;
       }
