@@ -16,6 +16,10 @@
   #placeBtn { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); display: none; z-index: 4; }
   #itemBtn { position: fixed; bottom: 90px; right: 20px; display: none; z-index: 4; font-size: 18px; padding: 14px 22px; }
 
+  /* 大画面中央ポップアップ通知 */
+  #centerNotice { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%) scale(0.5); font-size: 52px; font-weight: 900; text-align: center; pointer-events: none; z-index: 10; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-shadow: 0 6px 0 #000, 0 10px 20px rgba(0,0,0,0.8); }
+  #centerNotice.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
   /* ---------- 共通UI ---------- */
   .overlay { position: fixed; inset: 0; display: none; z-index: 5; }
   .btn { border: none; color: #fff; cursor: pointer; font-weight: 900; font-family: inherit; border-radius: 14px; transition: transform .08s, box-shadow .08s; letter-spacing: 1px; }
@@ -35,7 +39,6 @@
 
   /* ---------- スタート画面 ---------- */
   #title { align-items: center; justify-content: center; flex-direction: column; text-align: center; }
-  /* タイトル文字：黒枠の金色（ゴールドグラデーション）デザイン */
   .logo { position: relative; font-size: clamp(34px, 7vw, 76px); font-weight: 900; font-style: italic; line-height: 1.05; -webkit-text-stroke: 4px #000000; paint-order: stroke fill; text-shadow: 0 6px 0 #000000, 0 12px 24px rgba(0,0,0,.8); background: linear-gradient(180deg, #fff3a1 0%, #ffd700 45%, #d4af37 70%, #996515 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .logo small { display: block; font-size: .4em; -webkit-text-stroke: 2px #000000; letter-spacing: 4px; }
   
@@ -85,9 +88,12 @@
   #codeModal .sub { margin-top: 16px; color: #cfc9f5; }
   #codeModal .btn { margin-top: 20px; font-size: 20px; padding: 14px 34px; }
 
-  #result { background: rgba(0,0,0,.82); align-items: center; justify-content: center; flex-direction: column; text-align: center; }
-  #result h1 { font-size: 64px; margin: 0 0 8px; font-style: italic; -webkit-text-stroke: 2px #000; }
-  #result p { color: #ddd; margin: 6px 0; font-size: 18px; }
+  /* 勝利・敗北のスタイリッシュなリザルト画面 */
+  #result { background: rgba(5, 3, 15, 0.88); align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+  #result h1 { font-size: 80px; margin: 0 0 10px; font-style: italic; font-weight: 900; letter-spacing: 2px; text-shadow: 0 8px 0 #000, 0 0 30px rgba(0,0,0,0.8); }
+  #result.win h1 { color: #4ade80; -webkit-text-stroke: 3px #14532d; }
+  #result.lose h1 { color: #f87171; -webkit-text-stroke: 3px #7f1d1d; }
+  #result p { color: #e2e8f0; margin: 8px 0; font-size: 22px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -95,6 +101,7 @@
 <canvas id="mini" width="160" height="160"></canvas>
 <div id="hud"></div>
 <div id="banner"></div>
+<div id="centerNotice"></div>
 <button class="btn red" id="placeBtn" style="font-size:22px;padding:16px 34px">📍 ここに消しゴムを設置 (SPACE)</button>
 <button class="btn yellow" id="chestBtn" style="position:fixed;bottom:90px;left:50%;transform:translateX(-50%);display:none;z-index:4;font-size:22px;padding:16px 34px">🎁 宝箱を開ける (SPACE)</button>
 <button class="btn blue" id="itemBtn">⚡ アイテム使用 (Q)</button>
@@ -149,11 +156,11 @@
   <button class="btn yellow" id="copyBtn">コードをコピー</button>
 </div>
 
-<!-- 結果画面 -->
+<!-- 勝利・敗北 結果画面 -->
 <div id="result" class="overlay">
   <h1 id="resTitle"></h1>
   <p id="resMsg"></p>
-  <button class="btn yellow" id="toLobbyBtn" style="font-size:22px;padding:16px 36px;margin-top:20px">🏠 ロビーに戻る</button>
+  <button class="btn yellow" id="toLobbyBtn" style="font-size:22px;padding:16px 36px;margin-top:24px">🏠 ロビーに戻る</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -264,18 +271,45 @@ function toast(m) {
   const d = document.createElement('div'); d.textContent = m; $('toast').appendChild(d);
   setTimeout(() => d.remove(), 3600);
 }
+
+// 消しゴム獲得時の大画面通知
+socket.on('eraserGot', (targetRole, playerName) => {
+  const cn = $('centerNotice');
+  if (targetRole === 'runner') {
+    cn.textContent = '📦 消しゴムを獲得！';
+    cn.style.color = '#ffd23f';
+  } else {
+    cn.textContent = '🚨 消しゴムが奪われた！';
+    cn.style.color = '#ef4444';
+  }
+  cn.classList.add('show');
+  setTimeout(() => cn.classList.remove('show'), 2500);
+});
+
 socket.on('state', (s) => {
   state = s;
   if (!inGame) return;
   TH = (2 - s.side) * Math.PI / 2;
   if (s.s === 'playing') ended = false;
+  
+  // 勝敗決定時のリザルト画面表示（VICTORY / DEFEAT）
   if (s.s !== 'playing' && !ended) {
     ended = true;
-    const runnerWin = s.s === 'runwin', iWin = (myRole === 'runner') === runnerWin;
-    $('resTitle').textContent = iWin ? '勝利！' : '敗北…';
-    $('resTitle').style.color = iWin ? '#4ade80' : '#f87171';
-    $('resMsg').textContent = s.s === 'runwin' ? (s.slide < 2 ? 'ギリギリで扉の隙間に滑り込んだ！（残り ' + s.slide.toFixed(1) + ' 秒）' : '消しゴムを持って脱出成功！')
-      : s.s === 'oniwin' ? '逃げ側は全員倒された。' : '時間切れ。逃げ切れなかった。';
+    const runnerWin = s.s === 'runwin';
+    const iWin = (myRole === 'runner') === runnerWin;
+    const resElem = $('result');
+    
+    if (iWin) {
+      resElem.className = 'overlay win';
+      $('resTitle').textContent = 'VICTORY（勝利！）';
+    } else {
+      resElem.className = 'overlay lose';
+      $('resTitle').textContent = 'DEFEAT（敗北…）';
+    }
+    
+    $('resMsg').textContent = s.s === 'runwin' ? (s.slide < 2 ? 'ギリギリで扉の隙間に滑り込んだ！（残り ' + s.slide.toFixed(1) + ' 秒）' : '消しゴムを持ってエレベーター脱出成功！')
+      : s.s === 'oniwin' ? '逃げ側は全滅した。' : '時間切れ。全員捕まった。';
+      
     if (isSoloGame) $('toLobbyBtn').textContent = '🏠 タイトルに戻る';
     else $('toLobbyBtn').textContent = '🏠 ロビーに戻る';
     show('result', true);
@@ -438,17 +472,15 @@ function frame(now) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
   if (!inGame || !world || !state) return;
 
-  // ===== 逃げ側プレイヤーがエレベーターに入って脱出カウントダウン中の演出（扉閉鎖アニメーション修正） =====
+  // ===== 逃げ側プレイヤーがエレベーターに入って脱出カウントダウン中の演出 =====
   if (state.me.escaping > 0) {
     ctx.fillStyle = '#0a0618'; ctx.fillRect(0, 0, cv.width, cv.height);
     const cx = cv.width / 2, cy = cv.height / 2;
     const doorWidth = Math.min(cv.width * 0.4, 300);
     const doorHeight = Math.min(cv.height * 0.65, 480);
     
-    // progress: 0 (最初=完全にオープン) -> 1 (5秒後=中央で完全クローズ)
     const progress = clamp((5.0 - state.me.escaping) / 5.0, 0, 1);
     
-    // ドアの位置計算: progress=0 で画面外（オープン）、progress=1 で中央（クローズ）
     const leftDoorX = (cx - doorWidth) - (doorWidth * (1 - progress));
     const rightDoorX = cx + (doorWidth * (1 - progress));
 
@@ -456,7 +488,6 @@ function frame(now) {
     ctx.fillStyle = '#4ade80'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('🚪 CLOSING DOORS...', cx, cy - doorHeight/2 - 20);
 
-    // 鬼の動き（右・左）を同期させて、ドアの隙間から見える目を連動させる
     if (progress < 0.98 && state.ents) {
       const oniEnt = state.ents.find(e => e.role === 'oni');
       if (oniEnt) {
@@ -476,7 +507,6 @@ function frame(now) {
       }
     }
 
-    // 左パネルと右パネルを描画（スライド動作）
     metalPanel(leftDoorX, cy - doorHeight/2, doorWidth, doorHeight);
     metalPanel(rightDoorX, cy - doorHeight/2, doorWidth, doorHeight);
 
@@ -510,7 +540,7 @@ function frame(now) {
   const sh = danger * (state.me.e ? 4 : 1.5);
   SX = sh ? (Math.random() - 0.5) * sh * 2 : 0; SY = sh ? (Math.random() - 0.5) * sh * 2 : 0;
 
-  // ===== パス1：ワールド =====
+  // ===== パス1：ワールド（画面全体を明るく描画） =====
   withWorld(() => {
     ctx.drawImage(mazeCanvas, 0, 0);
     for (let i = 0; i < 4; i++) {
@@ -547,30 +577,15 @@ function frame(now) {
       ctx.restore();
     }
     for (const e of state.ents) {
-      const v = views[e.id]; let a = 1;
-      if (e.role !== myRole) { const d = Math.hypot(v.x - camV.x, v.y - camV.y); a = clamp((lightR * 0.8 - d) / (lightR * 0.35), 0, 1); if (a <= 0.02) continue; }
-      drawActor(e, v, a, false, now);
+      const v = views[e.id];
+      drawActor(e, v, 1, false, now);
     }
     if (state.me.al || myRole === 'oni') drawActor({ role: myRole, al: true, hp: state.me.hp, e: state.me.e, st: state.me.st, inv: state.me.inv, n: myName, skin: mySkin }, meV, state.me.invis ? 0.3 : 1, true, now);
   });
 
-  // ===== 暗闇・靄 =====
-  const cx = cv.width / 2 + SX, cy = cv.height / 2 + SY;
-  const R = lightR * Z * (1 + Math.sin(now / 400) * 0.015);
-  const grd = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R);
-  grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(0.6, 'rgba(0,0,0,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0.9)');
-  ctx.fillStyle = grd; ctx.fillRect(0, 0, cv.width, cv.height);
+  // ※「ドス黒いモヤ（グラデーション）」コードは完全に除去済みです※
 
-  // ===== パス2：闇の中の影 =====
-  withWorld(() => {
-    for (const e of state.ents) {
-      if (e.role === myRole) continue;
-      const v = views[e.id], d = Math.hypot(v.x - camV.x, v.y - camV.y);
-      const up = clamp((d - lightR * 0.5) / (lightR * 0.3), 0, 1), down = clamp((ghostR - d) / (ghostR - lightR * 0.9), 0, 1);
-      const a = 0.62 * up * down;
-      if (a > 0.02) drawSil(e, v, a, now);
-    }
-  });
+  const cx = cv.width / 2 + SX, cy = cv.height / 2 + SY;
 
   // 消しゴムの方向を示す三角形インジケーター
   if (myRole === 'runner' && state.er && !state.er.c && state.er.x != null) {
