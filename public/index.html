@@ -39,8 +39,10 @@
 
   /* ---------- スタート画面 ---------- */
   #title { align-items: center; justify-content: center; flex-direction: column; text-align: center; }
-  .logo { position: relative; font-size: clamp(34px, 7vw, 76px); font-weight: 900; font-style: italic; line-height: 1.05; -webkit-text-stroke: 4px #000000; paint-order: stroke fill; text-shadow: 0 6px 0 #000000, 0 12px 24px rgba(0,0,0,.8); background: linear-gradient(180deg, #fff3a1 0%, #ffd700 45%, #d4af37 70%, #996515 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .logo small { display: block; font-size: .4em; -webkit-text-stroke: 2px #000000; letter-spacing: 4px; }
+  
+  /* タイトル文字：ドス黒いモヤ（シャドウ）を消してスッキリ綺麗な金色グラデーションに修正 */
+  .logo { position: relative; font-size: clamp(34px, 7vw, 76px); font-weight: 900; font-style: italic; line-height: 1.05; background: linear-gradient(180deg, #fff3a1 0%, #ffd700 50%, #e6ca65 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
+  .logo small { display: block; font-size: .4em; letter-spacing: 4px; color: #ffd700; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
   
   .center { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; width: min(92vw, 460px); margin-top: 26px; }
   .center .btn.big { width: 100%; font-size: 26px; padding: 20px 10px; }
@@ -88,7 +90,7 @@
   #codeModal .sub { margin-top: 16px; color: #cfc9f5; }
   #codeModal .btn { margin-top: 20px; font-size: 20px; padding: 14px 34px; }
 
-  /* 勝利・敗北のスタイリッシュなリザルト画面 */
+  /* 勝利・敗北のリザルト画面 */
   #result { background: rgba(5, 3, 15, 0.88); align-items: center; justify-content: center; flex-direction: column; text-align: center; }
   #result h1 { font-size: 80px; margin: 0 0 10px; font-style: italic; font-weight: 900; letter-spacing: 2px; text-shadow: 0 8px 0 #000, 0 0 30px rgba(0,0,0,0.8); }
   #result.win h1 { color: #4ade80; -webkit-text-stroke: 3px #14532d; }
@@ -276,7 +278,7 @@ function toast(m) {
 socket.on('eraserGot', (targetRole, playerName) => {
   const cn = $('centerNotice');
   if (targetRole === 'runner') {
-    cn.textContent = '📦 消しゴムを獲得！';
+    cn.textContent = '📦 消しゴム獲得！';
     cn.style.color = '#ffd23f';
   } else {
     cn.textContent = '🚨 消しゴムが奪われた！';
@@ -292,7 +294,6 @@ socket.on('state', (s) => {
   TH = (2 - s.side) * Math.PI / 2;
   if (s.s === 'playing') ended = false;
   
-  // 勝敗決定時のリザルト画面表示（VICTORY / DEFEAT）
   if (s.s !== 'playing' && !ended) {
     ended = true;
     const runnerWin = s.s === 'runwin';
@@ -472,7 +473,6 @@ function frame(now) {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
   if (!inGame || !world || !state) return;
 
-  // ===== 逃げ側プレイヤーがエレベーターに入って脱出カウントダウン中の演出 =====
   if (state.me.escaping > 0) {
     ctx.fillStyle = '#0a0618'; ctx.fillRect(0, 0, cv.width, cv.height);
     const cx = cv.width / 2, cy = cv.height / 2;
@@ -540,7 +540,6 @@ function frame(now) {
   const sh = danger * (state.me.e ? 4 : 1.5);
   SX = sh ? (Math.random() - 0.5) * sh * 2 : 0; SY = sh ? (Math.random() - 0.5) * sh * 2 : 0;
 
-  // ===== パス1：ワールド（画面全体を明るく描画） =====
   withWorld(() => {
     ctx.drawImage(mazeCanvas, 0, 0);
     for (let i = 0; i < 4; i++) {
@@ -583,11 +582,8 @@ function frame(now) {
     if (state.me.al || myRole === 'oni') drawActor({ role: myRole, al: true, hp: state.me.hp, e: state.me.e, st: state.me.st, inv: state.me.inv, n: myName, skin: mySkin }, meV, state.me.invis ? 0.3 : 1, true, now);
   });
 
-  // ※「ドス黒いモヤ（グラデーション）」コードは完全に除去済みです※
-
   const cx = cv.width / 2 + SX, cy = cv.height / 2 + SY;
 
-  // 消しゴムの方向を示す三角形インジケーター
   if (myRole === 'runner' && state.er && !state.er.c && state.er.x != null) {
     const p = w2s(state.er.x, state.er.y);
     if (p.x < 40 || p.x > cv.width - 40 || p.y < 40 || p.y > cv.height - 40) {
@@ -598,7 +594,6 @@ function frame(now) {
     }
   }
 
-  // エレベーターの光
   if (el.open) {
     for (let i = 0; i < 4; i++) {
       if (myRole === 'runner' && i !== state.side) continue;
@@ -615,7 +610,6 @@ function frame(now) {
   drawMini(now);
   updateHud();
 
-  // Mキーによる全体マップ描画
   if (mapOpen) {
     ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, cv.width, cv.height);
     const mapSize = Math.min(cv.width, cv.height) * 0.75;
