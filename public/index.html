@@ -54,23 +54,25 @@
   .tab-btn { flex: 1; padding: 8px; background: #3b3780; border: none; border-radius: 8px; color: #fff; font-weight: 900; cursor: pointer; }
   .tab-btn.active { background: #ffd23f; color: #3a2a00; }
 
-  /* ---------- フォートナイト・ブロスタ風ロビー ---------- */
+  /* ---------- 人型キャラを直接並べるロビー ---------- */
   #lobby .top-left { position: absolute; top: 16px; left: 76px; z-index: 2; display: flex; gap: 8px; }
   #codePill { position: absolute; top: 14px; right: 16px; z-index: 2; cursor: pointer; background: rgba(10,6,32,.75); border: 3px solid #ffd23f; border-radius: 16px; padding: 6px 18px 8px; text-align: center; box-shadow: 0 5px 0 #c79a00; }
   #codePill:active { transform: translateY(3px); box-shadow: 0 2px 0 #c79a00; }
   #codePill .lab { font-size: 11px; letter-spacing: 3px; color: #ffd23f; font-weight: 800; }
   #codePill .num { font-size: 32px; font-weight: 900; letter-spacing: 6px; font-style: italic; }
 
-  .stage-arena { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; gap: 24px; flex-wrap: wrap; padding: 80px 20px 140px; }
-  .spot-podium { position: absolute; width: 640px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.2), rgba(255,255,255,0) 70%); top: 55%; left: 50%; transform: translate(-50%, -50%); }
-  
-  .brawler-card { display: flex; flex-direction: column; align-items: center; position: relative; pointer-events: auto; animation: bob 2.2s ease-in-out infinite; }
-  .brawler-avatar { width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 54px; background: radial-gradient(circle at 35% 30%, #7db6ff, #2f5fd0); border: 5px solid #fff; box-shadow: 0 10px 0 rgba(0,0,0,.35), 0 0 30px rgba(120,160,255,.6); position: relative; }
-  .brawler-avatar.oni { background: radial-gradient(circle at 35% 30%, #ff8d8d, #c21e1e); box-shadow: 0 10px 0 rgba(0,0,0,.35), 0 0 30px rgba(255,90,90,.6); }
-  .brawler-nameplate { margin-top: 8px; padding: 4px 14px; font-size: 16px; font-weight: 900; font-style: italic; background: #ffd23f; color: #3a2a00; border-radius: 6px; box-shadow: 0 3px 0 #c79a00; white-space: nowrap; }
-  .brawler-rolefoot { margin-top: 4px; font-size: 20px; filter: drop-shadow(0 2px 4px #000); }
+  .stage-arena { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; padding: 80px 20px 140px; }
+  .spot-podium { position: absolute; width: 720px; height: 260px; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(255,210,63,.25) 0%, rgba(255,255,255,0) 70%); top: 52%; left: 50%; transform: translate(-50%, -50%); border: 2px dashed rgba(255,210,63,.3); }
 
-  @keyframes bob { 50% { transform: translateY(-8px); } }
+  .brawler-card { display: flex; flex-direction: column; align-items: center; position: relative; pointer-events: auto; animation: bob 2.2s ease-in-out infinite; margin: 0 10px; }
+  
+  /* 操作キャラ（アバター）の描画用 Canvas */
+  .char-canvas { width: 120px; height: 150px; filter: drop-shadow(0 12px 10px rgba(0,0,0,0.6)); }
+
+  .brawler-nameplate { margin-top: -10px; padding: 4px 14px; font-size: 16px; font-weight: 900; font-style: italic; background: #ffd23f; color: #3a2a00; border-radius: 8px; box-shadow: 0 4px 0 #c79a00; white-space: nowrap; z-index: 2; }
+  .brawler-rolefoot { margin-top: 6px; font-size: 22px; filter: drop-shadow(0 2px 4px #000); }
+
+  @keyframes bob { 50% { transform: translateY(-10px); } }
 
   .bottom-left { position: absolute; left: 16px; bottom: 18px; z-index: 2; display: flex; gap: 10px; flex-wrap: wrap; }
   .bottom-left .btn { font-size: 16px; padding: 14px 18px; }
@@ -201,7 +203,6 @@
       <button class="tab-btn" id="tabFriendsBtn">フレンド</button>
     </div>
     
-    <!-- プロフィール設定タブ -->
     <div id="contentProfile">
       <div class="row"><span>ユーザー名</span></div>
       <input id="profileNameField" class="field" maxlength="12" placeholder="プレイヤー名">
@@ -210,7 +211,6 @@
       <div style="text-align:center;margin-top:14px"><button class="btn yellow" id="saveProfileBtn">保存する</button></div>
     </div>
 
-    <!-- フレンド追加＆リストタブ -->
     <div id="contentFriends" style="display:none;">
       <div style="font-size:14px;color:#cbd5e1;margin-bottom:8px">友達のユーザー名とパスワードを入力して追加！</div>
       <div class="row"><input id="addFriendNameInput" class="field" placeholder="友達のユーザー名" maxlength="12"></div>
@@ -268,7 +268,7 @@
   
   <div class="stage-arena">
     <div class="spot-podium"></div>
-    <div id="brawlersArena" style="display:flex;gap:30px;justify-content:center;align-items:center;flex-wrap:wrap;z-index:2;position:relative;"></div>
+    <div id="brawlersArena" style="display:flex;gap:40px;justify-content:center;align-items:center;flex-wrap:wrap;z-index:2;position:relative;"></div>
   </div>
 
   <div id="skname"></div>
@@ -359,7 +359,6 @@ $('tabFriendsBtn').onclick = () => {
   $('contentFriends').style.display = 'block'; $('contentProfile').style.display = 'none';
 };
 
-// プロフィール＆パスワード保存
 $('saveProfileBtn').onclick = () => {
   const v = $('profileNameField').value.trim();
   const pass = $('profilePassField').value.trim();
@@ -375,7 +374,6 @@ $('saveProfileBtn').onclick = () => {
   show('menuModal', false);
 };
 
-// フレンド追加フォーム送信
 $('submitAddFriendBtn').onclick = () => {
   const fName = $('addFriendNameInput').value.trim();
   const fPass = $('addFriendPassInput').value.trim();
@@ -388,7 +386,6 @@ $('submitAddFriendBtn').onclick = () => {
   $('addFriendPassInput').value = '';
 };
 
-// サーバーからのフレンド追加結果通知
 socket.on('friendAddResult', (data) => {
   toast(data.msg);
   if (data.success && data.friends) {
@@ -510,29 +507,73 @@ socket.on('lobby', (d) => {
   if (!inGame) { show('title', false); show('lobby', true); setScreen('lobby'); setBgm('lobby'); renderLobby(); }
 });
 
+// ゲーム内と同じドット絵・人型キャラを直接描画する関数
+function drawLobbyCharacter(c, role, skinIdx) {
+  const isOni = role === 'oni', sk = SKINS[skinIdx || 0];
+  c.clearRect(0, 0, 120, 150);
+  c.save();
+  c.translate(60, 110);
+  c.scale(3.2, 3.2); // 立ち姿を大きく拡大表示
+
+  const skinColor = isOni ? '#f87171' : '#f5cfa8';
+  const shirtColor = isOni ? sk.o : sk.c;
+  const pantsColor = isOni ? '#facc15' : '#334155';
+
+  // 脚
+  c.strokeStyle = pantsColor; c.lineWidth = 4; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-3, 2); c.lineTo(-3, 14); c.stroke();
+  c.beginPath(); c.moveTo(3, 2); c.lineTo(3, 14); c.stroke();
+
+  // 胴体
+  c.fillStyle = shirtColor;
+  rr(c, -7, -16, 14, 18, 3); c.fill();
+
+  // 頭
+  c.fillStyle = skinColor;
+  c.beginPath(); c.arc(0, -23, 8, 0, Math.PI * 2); c.fill();
+
+  // 鬼の角（鬼の場合のみ）
+  if (isOni) {
+    c.fillStyle = '#fde68a';
+    c.beginPath(); c.moveTo(-4, -28); c.lineTo(-2, -35); c.lineTo(0, -28); c.fill();
+    c.beginPath(); c.moveTo(0, -28); c.lineTo(2, -35); c.lineTo(4, -28); c.fill();
+  }
+
+  // 目
+  c.fillStyle = '#1e293b';
+  c.fillRect(-3, -24, 2, 3);
+  c.fillRect(1, -24, 2, 3);
+
+  c.restore();
+}
+
+// 人型キャラクターを並べる新しいロビー描画
 function renderLobby() {
   const d = lobbyData, me = d.players.find((p) => p.id === d.you) || { name: '', role: 'auto', skin: 0 };
   $('codeNum').textContent = d.code; $('codeBig').textContent = d.code;
   
   const arena = $('brawlersArena'); arena.innerHTML = '';
   for (const p of d.players) {
-    const sk = SKINS[p.skin || 0];
     const card = document.createElement('div'); card.className = 'brawler-card';
     
-    const avatar = document.createElement('div');
-    avatar.className = 'brawler-avatar ' + p.role;
-    avatar.textContent = roleEmoji[p.role];
-    avatar.style.background = 'radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), ' + (p.role === 'oni' ? sk.o : sk.c) + ' 60%)';
-    
+    // 人型キャラクター描画用キャンバス
+    const cCv = document.createElement('canvas');
+    cCv.className = 'char-canvas';
+    cCv.width = 120; cCv.height = 150;
+    const cCtx = cCv.getContext('2d');
+    drawLobbyCharacter(cCtx, p.role, p.skin);
+
+    // 頭上の名前プレート（ホストは 👑 付き）
     const namePlate = document.createElement('div');
     namePlate.className = 'brawler-nameplate';
     namePlate.textContent = p.name + (p.id === d.host ? ' 👑' : '');
 
+    // 足元のロールアイコン
     const roleFoot = document.createElement('div');
     roleFoot.className = 'brawler-rolefoot';
     roleFoot.textContent = roleEmoji[p.role];
 
-    card.append(avatar, namePlate, roleFoot);
+    card.append(cCv, namePlate, roleFoot);
     arena.appendChild(card);
   }
 
