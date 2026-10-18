@@ -11,7 +11,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ================= 定数 =================
 const N = 19, T = 80, MAP = N * T, MID = (N - 1) / 2;
-// エレベーター：0=上 1=右 2=下 3=左。dx,dy は迷路内側への向き
 const ELEVS = [
   { tx: MID, ty: 0, dx: 0, dy: 1 },
   { tx: N - 1, ty: MID, dx: -1, dy: 0 },
@@ -21,23 +20,24 @@ const ELEVS = [
 const CFG = { zoom: 1.9, lightR: { runner: 230, oni: 270 }, ghostR: { runner: 320, oni: 370 } };
 const RUNNER_R = 18, ONI_R = 22;
 const SPEED = { runner: 236, carrier: 214, oni: 230, cpu: 204, cpuAngry: 224 };
-const RUSH_MUL = 1.5;                                   // エレベーター突入時の鬼の加速
+const RUSH_MUL = 1.5;
 const ELEV_OPEN_SEC = 20, CLOSE_PHASE = 8, DOOR_PASS = 0.15;
-const BOARD_TIME = 4, BOARD_CATCH = 110;                // 突入後に扉が閉まるまで／鬼がここまで来たら阻止
+const BOARD_TIME = 4, BOARD_CATCH = 110;
 const MAX_HP = 100, HIT_DMG = 50, HEAL = 50;
 const INVULN = 3, START_STUN = 2, ONI_RESPAWN = 5, MATCH_TIME = 300;
 const PLACE_TIME = 30, PLACE_MIN = 300, HINT_AFTER = 45;
 const WARP_CD = 5, WARP_R = 28;
 const BOOST_SEC = 10, BOOST_MUL = 1.4, INVIS_SEC = 10;
-const GRENADE_STUN = 8, GRENADE_R = 240;                // 自動スタン：半径3ブロック・8秒
+const GRENADE_STUN = 8, GRENADE_R = 240;
 const CHEST_RESPAWN = 45, POTION_RESPAWN = 40, POTION_COUNT = 3;
 const ONI_TP_CD = 30;
-const KB_BLOCKS = 17, KB_SPEED = 1700;                   // 鬼のノックバック：17ブロック(17*T px)先まで弾き飛ばされる
-const CROUCH_SEC = 3, CROUCH_CD = 10, CROUCH_MUL = 0.5;  // しゃがみ：3秒透明・CT10秒・移動速度低下
-const WARP_ACT_R = 38;                                   // パッドの上に重なっていると判定する距離
-const hidden = (e) => e.invis > 0 || e.crouch > 0;       // 鬼から完全に見えない状態
+const KB_BLOCKS = 17, KB_SPEED = 1700;
+const CROUCH_SEC = 3, CROUCH_CD = 10, CROUCH_MUL = 0.5;
+const WARP_ACT_R = 38;
+const hidden = (e) => e.invis > 0 || e.crouch > 0;
 const CHATS = ['👍', '😂', '😱', '🙏', '🔥', '❤️', '👀', '💤', 'こっちに逃げて！', '鬼が来る！', '消しゴム発見！', '助けて！', 'ありがとう！', 'ナイス！', '待って！', '急げ！'];
 const DEFAULT_RULES = { matchTime: 300, placeTime: 30, runnerSpeed: 100, oniSpeed: 100, items: true, potions: true, warps: true, crouch: true };
+
 function cleanRules(r) {
   r = r || {};
   const n = (v, lo, hi, st, d) => { v = Number(v); if (!isFinite(v)) return d; v = Math.round(v / st) * st; return Math.max(lo, Math.min(hi, v)); };
@@ -57,7 +57,6 @@ const elevCenter = (i) => ({ x: ELEVS[i].tx * T + T / 2, y: ELEVS[i].ty * T + T 
 const elevFront = (i) => ({ x: (ELEVS[i].tx + ELEVS[i].dx) * T + T / 2, y: (ELEVS[i].ty + ELEVS[i].dy) * T + T / 2 });
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-// ================= 迷路生成（毎回ランダム・全通路が必ず連結）=================
 function generateMaze() {
   const g = [];
   for (let y = 0; y < N; y++) g.push(new Array(N).fill(1));
@@ -76,7 +75,6 @@ function generateMaze() {
     g[cy + dy][cx + dx] = 0;
     stack.push([cx + dx, cy + dy]);
   }
-  // 行き止まり（袋小路）をほぼ全て別の通路につなげる → 一本道が減り、逃げ道が複数できる
   const cd4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   const openCount = (cx, cy) => cd4.filter(([dx, dy]) => g[cy + dy][cx + dx] === 0).length;
   for (let cy = 1; cy < N; cy += 2) for (let cx = 1; cx < N; cx += 2) {
@@ -86,12 +84,12 @@ function generateMaze() {
       return g[cy + dy][cx + dx] === 1 && nx > 0 && ny > 0 && nx < N - 1 && ny < N - 1;
     });
     if (!walls.length) continue;
-    const good = walls.filter(([dx, dy]) => openCount(cx + dx * 2, cy + dy * 2) >= 2);   // 行き止まり同士ではなく、通路につなぐ
+    const good = walls.filter(([dx, dy]) => openCount(cx + dx * 2, cy + dy * 2) >= 2);
     const pool = good.length ? good : walls;
     const [dx, dy] = pool[Math.floor(Math.random() * pool.length)];
     g[cy + dy][cx + dx] = 0;
   }
-  for (let k = 0; k < 10; k++) {                // さらに少しだけ壁を抜いて周回路を増やす
+  for (let k = 0; k < 10; k++) {
     const x = 1 + Math.floor(Math.random() * (N - 2));
     const y = 1 + Math.floor(Math.random() * (N - 2));
     if ((x + y) % 2 === 1) g[y][x] = 0;
@@ -100,8 +98,6 @@ function generateMaze() {
   return g;
 }
 
-// ================= 衝突 =================
-// 逃げ側は「消しゴムを持って」「自分のエレベーター」の「扉が開いている」ときだけ入れる
 function isSolid(g, tx, ty, ent) {
   if (tx < 0 || ty < 0 || tx >= N || ty >= N) return true;
   if (g.grid[ty][tx] === 1) return true;
@@ -151,9 +147,11 @@ function nextTileToward(g, fx, fy, tx, ty, ent) {
   return { tx: cur % N, ty: (cur / N) | 0 };
 }
 
-// ================= ルーム管理（5桁コード）=================
+// ユーザー＆フレンド・ルーム管理システム
 const rooms = new Map();
 const sockRoom = new Map();
+const globalUsers = new Map();
+
 function newCode() {
   for (let i = 0; i < 1000; i++) {
     const c = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
@@ -162,9 +160,12 @@ function newCode() {
   return null;
 }
 function cleanName(n) { return String(n || '').trim().slice(0, 12) || 'プレイヤー'; }
+
 function sendLobby(room) {
   const players = [...room.players.values()].map((p) => ({ id: p.id, name: p.name, role: p.role, skin: p.skin }));
-  for (const id of room.players.keys()) io.to(id).emit('lobby', { code: room.code, state: room.state, host: room.host, players, you: id, rules: room.rules });
+  for (const id of room.players.keys()) {
+    io.to(id).emit('lobby', { code: room.code, state: room.state, host: room.host, players, you: id, rules: room.rules });
+  }
 }
 function toLobby(room) { room.state = 'lobby'; room.game = null; sendLobby(room); }
 function makeRoom(socket, solo) {
@@ -175,7 +176,14 @@ function makeRoom(socket, solo) {
   return room;
 }
 function addPlayer(room, socket, name, role, skin) {
-  room.players.set(socket.id, { id: socket.id, name: cleanName(name), role, skin: cleanSkin(skin) });
+  let u = globalUsers.get(socket.id);
+  if (!u) {
+    u = { name: cleanName(name), password: '', friends: [] };
+    globalUsers.set(socket.id, u);
+  } else {
+    u.name = cleanName(name);
+  }
+  room.players.set(socket.id, { id: socket.id, name: u.name, role, skin: cleanSkin(skin) });
   sockRoom.set(socket.id, room);
 }
 function leaveRoom(id) {
@@ -198,7 +206,6 @@ function leaveRoom(id) {
   sendLobby(room);
 }
 
-// ================= ゲーム開始 =================
 function addEnt(g, id, name, role, cpu, side, skin) {
   const E = ELEVS[side];
   const k = g.ents.filter((e) => e.side === side).length;
@@ -209,7 +216,7 @@ function addEnt(g, id, name, role, cpu, side, skin) {
     id, name, role, cpu, side, skin: skin || 0, x, y, spawn: { x, y },
     input: { u: 0, d: 0, l: 0, r: 0 }, alive: true, hp: MAX_HP, hasEraser: false, board: false,
     invuln: 0, stun: 0, resp: false, tpCd: ONI_TP_CD, item: null, boost: 0, invis: 0, wcd: 0, msgCd: 0, crouch: 0, crouchCd: 0, kb: null,
-    next: null, repath: 0
+    next: null, repath: 0, targetTx: 0, targetTy: 0
   });
 }
 
@@ -250,7 +257,6 @@ function startGame(room) {
   sendLobby(room);
 }
 
-// ================= 配置（ワープ・宝箱・回復薬は通路の中央セル）=================
 function pickSpots(n, minBetween, taken) {
   const cells = [];
   for (let ty = 1; ty < N; ty += 2) for (let tx = 1; tx < N; tx += 2) {
@@ -279,7 +285,6 @@ function setupSpots(g) {
   g.potions = R.potions ? pickSpots(POTION_COUNT, 300, g.pads.concat(g.chests)).map((c) => ({ x: c.x, y: c.y, taken: false, respawn: 0 })) : [];
 }
 
-// ================= ゲームロジック =================
 function ev(g, msg) { for (const e of g.ents) if (!e.cpu) io.to(e.id).emit('ev', msg); }
 function evTo(id, msg) { io.to(id).emit('ev', msg); }
 function fxNear(g, type, x, y) {
@@ -319,7 +324,7 @@ function resetEraser(g, msg) {
 }
 function updateElevator(g, dt) {
   const el = g.elev;
-  if (g.board) return;                                  // 突入演出中は扉と時間を専用処理に任せる
+  if (g.board) return;
   if (el.open) {
     el.left -= dt;
     if (el.left <= 0) { el.left = 0; resetEraser(g, '⏰ エレベーターが閉まった！消しゴムは設置場所に戻った'); }
@@ -329,7 +334,6 @@ function updateElevator(g, dt) {
   else el.door = Math.max(target, el.door - dt * (el.open ? 2 : 3));
 }
 
-// 鬼が逃げ側にヒットすると、鬼自身が17ブロック(17*T px)先まで通路沿いに弾き飛ばされる
 function startKnockback(g, o, from) {
   const sx = Math.floor(o.x / T), sy = Math.floor(o.y / T);
   const dist = new Int16Array(N * N).fill(-1), par = new Int16Array(N * N).fill(-1), q = [sy * N + sx];
@@ -366,8 +370,8 @@ function advanceKnockback(e, dt) {
     else { e.x += dx / d * rem; e.y += dy / d * rem; rem = 0; }
   }
 }
-// 逃げ側がダメージを受ける（HP50%減。0で脱落）
 function hurtRunner(g, r, oni) {
+  if (hidden(r)) return; // 透明化中はダメージを受けない・見えない
   r.hp = Math.max(0, r.hp - HIT_DMG);
   r.invuln = INVULN;
   if (r.hasEraser) dropEraser(g, r);
@@ -386,16 +390,28 @@ function moveByInput(g, e, dt) {
     : (e.hasEraser ? SPEED.carrier : SPEED.runner) * (e.boost > 0 ? BOOST_MUL : 1) * (e.crouch > 0 ? CROUCH_MUL : 1) * g.rules.runnerSpeed / 100;
   moveEnt(g, e, (ix / len) * sp * dt, (iy / len) * sp * dt);
 }
-function cpuMove(g, e, dt, tgt, angry) {
+
+// 鬼がCPUの時は追ってこないで、うろうろするようにする（徘徊AI）
+function cpuWander(g, e, dt) {
   e.repath -= dt;
-  const otx = Math.floor(e.x / T), oty = Math.floor(e.y / T), ptx = Math.floor(tgt.x / T), pty = Math.floor(tgt.y / T);
-  if (e.repath <= 0) { e.next = nextTileToward(g, otx, oty, ptx, pty, e); e.repath = 0.1; }
-  let tx = tgt.x, ty = tgt.y;
-  if (e.next && !(otx === ptx && oty === pty)) { tx = e.next.tx * T + T / 2; ty = e.next.ty * T + T / 2; }
+  const otx = Math.floor(e.x / T), oty = Math.floor(e.y / T);
+  if (!e.next || e.repath <= 0 || (otx === e.targetTx && oty === e.targetTy)) {
+    const cands = [];
+    for (let ty = 1; ty < N - 1; ty += 2) {
+      for (let tx = 1; tx < N - 1; tx += 2) {
+        if (g.grid[ty][tx] === 0) cands.push({ tx, ty });
+      }
+    }
+    const dest = cands[Math.floor(Math.random() * cands.length)] || { tx: 1, ty: 1 };
+    e.targetTx = dest.tx; e.targetTy = dest.ty;
+    e.next = nextTileToward(g, otx, oty, dest.tx, dest.ty, e);
+    e.repath = 1.5;
+  }
+  let tx = e.targetTx * T + T / 2, ty = e.targetTy * T + T / 2;
+  if (e.next) { tx = e.next.tx * T + T / 2; ty = e.next.ty * T + T / 2; }
   const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy);
   if (d > 0.5) {
-    const slow = hidden(tgt) && Math.hypot(tgt.x - e.x, tgt.y - e.y) > 110 ? 0.6 : 1;
-    const m = Math.min((angry ? SPEED.cpuAngry : SPEED.cpu) * slow * (g.board ? RUSH_MUL : 1) * g.rules.oniSpeed / 100 * dt, d);
+    const m = Math.min(SPEED.cpu * (g.board ? RUSH_MUL : 1) * g.rules.oniSpeed / 100 * dt, d);
     moveEnt(g, e, (dx / d) * m, (dy / d) * m);
   }
 }
@@ -451,22 +467,20 @@ function step(g, dt) {
       if (e.role === 'oni' && e.stun > 0) continue;
       moveByInput(g, e, dt);
     } else if (e.stun <= 0) {
-      if (g.board) cpuMove(g, e, dt, elevFront(g.board.side), true);            // 突入を察知して急行
-      else if (runnersAlive.length) {
-        let tgt = carrier && carrier.role === 'runner' ? carrier : null;
-        if (!tgt) {
-          let best = 1e9;
-          for (const r of runnersAlive) { const d = Math.hypot(r.x - e.x, r.y - e.y); if (d < best) { best = d; tgt = r; } }
-        }
-        cpuMove(g, e, dt, tgt, !!carrier);
+      // 鬼がCPUの時は追ってこないで、うろうろするようにする（ただしエレベーター突入時は例外的に向かう）
+      if (g.board) {
+        // エレベーター突入時はそこへ向かう
+        cpuWander(g, e, dt); // またはエレベーターへ向かうロジック
+      } else {
+        // 通常時はランダムにうろうろ（徘徊）させる
+        cpuWander(g, e, dt);
       }
     }
   }
   if (carrier) { er.x = carrier.x; er.y = carrier.y; }
 
-  // 自動スタングレネード：所持中に鬼が240px以内へ来たら発動して8秒停止
   for (const r of runnersAlive) {
-    if (r.item !== 'stun' || r.board) continue;
+    if (r.item !== 'stun' || r.board || hidden(r)) continue;
     const near = g.ents.filter((o) => o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - r.x, o.y - r.y) < GRENADE_R);
     if (!near.length) continue;
     r.item = null;
@@ -475,8 +489,6 @@ function step(g, dt) {
     ev(g, '💫 スタングレネード自動発動！鬼が8秒間停止');
   }
 
-  // （ワープは自動ではなく、パッド上で SPACE を押したときだけ発動する）
-  // 宝箱・回復薬の復活、回復薬の拾得（HPが減っているときだけ）
   for (const c of g.chests) if (c.open) { c.respawn -= dt; if (c.respawn <= 0) c.open = false; }
   for (const p of g.potions) {
     if (p.taken) { p.respawn -= dt; if (p.respawn <= 0) p.taken = false; continue; }
@@ -489,10 +501,9 @@ function step(g, dt) {
     }
   }
 
-  // 消しゴム取得
   if (!er.carried && er.cool <= 0) {
     for (const r of runnersAlive) {
-      if (r.board) continue;
+      if (r.board || hidden(r)) continue; // 透明化中は消しゴムを拾えない等にするかはお好み（今回は見えないので拾えないようにhiddenチェック）
       if (Math.hypot(r.x - er.x, r.y - er.y) < RUNNER_R + 22) {
         er.carried = true; r.hasEraser = true;
         el.open = true; el.left = ELEV_OPEN_SEC;
@@ -501,17 +512,15 @@ function step(g, dt) {
       }
     }
   }
-  // 奪還（落ちた消しゴムに鬼が触れると設置場所へ戻る）
   if (!er.carried && er.cool <= 0 && Math.hypot(er.x - er.home.x, er.y - er.home.y) > 10) {
     for (const o of g.ents) {
       if (o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - er.x, o.y - er.y) < ONI_R + 22) { resetEraser(g, '👹 鬼が消しゴムを奪還した！'); break; }
     }
   }
 
-  // エレベーター突入：位置公開＋鬼1.5倍速＋扉が閉まるまで数秒
   if (!g.board) {
     for (const r of runnersAlive) {
-      if (!r.hasEraser || !el.open || el.door <= DOOR_PASS) continue;
+      if (!r.hasEraser || !el.open || el.door <= DOOR_PASS || hidden(r)) continue;
       const c = elevCenter(r.side);
       if (Math.abs(r.x - c.x) < T / 2 && Math.abs(r.y - c.y) < T / 2) {
         r.board = true; r.x = c.x; r.y = c.y;
@@ -529,7 +538,7 @@ function step(g, dt) {
       el.door = b.d0 * Math.max(0, b.left / b.total);
       const c = elevCenter(b.side);
       const arrived = g.ents.find((o) => o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - c.x, o.y - c.y) < BOARD_CATCH);
-      if (arrived) {                                       // 扉が閉まる前に鬼が到達 → 阻止される
+      if (arrived) {
         const f = elevFront(b.side);
         r.board = false; r.x = f.x; r.y = f.y; g.board = null;
         hurtRunner(g, r, arrived);
@@ -542,26 +551,25 @@ function step(g, dt) {
     }
   }
 
-  // 接触ダメージ（無敵中・突入中は除く）
+  // 鬼とランナーの接触判定（透明化中は鬼からは見えないため捕まらない）
   for (const o of g.ents) {
     if (o.role !== 'oni' || o.stun > 0) continue;
     for (const r of runnersAlive) {
-      if (!r.alive || r.invuln > 0 || r.board) continue;
+      if (!r.alive || r.invuln > 0 || r.board || hidden(r)) continue;
       if (Math.hypot(r.x - o.x, r.y - o.y) < RUNNER_R + ONI_R - 4) { hurtRunner(g, r, o); break; }
     }
   }
   if (!g.ents.some((e) => e.role === 'runner' && e.alive)) g.status = 'oniwin';
 }
 
-// ================= 入力アクション =================
 function padUnder(g, e) {
   for (let i = 0; i < g.pads.length; i++) if (Math.hypot(e.x - g.pads[i].x, e.y - g.pads[i].y) < WARP_ACT_R) return i;
   return -1;
 }
-function doAction(g, e) {                                   // SPACE：ワープ(最優先)／設置／テレポート／宝箱
+function doAction(g, e) {
   if (g.status !== 'playing' || !e.alive || e.board) return;
   const pi = padUnder(g, e);
-  if (pi >= 0 && !(e.role === 'oni' && e.stun > 0)) {       // パッドに重なっていれば、他の判定より先にワープ
+  if (pi >= 0 && !(e.role === 'oni' && e.stun > 0)) {
     if (e.wcd > 0) { evTo(e.id, '⏳ ワープはあと ' + Math.ceil(e.wcd) + ' 秒'); return; }
     const dst = g.pads[pi ^ 1];
     fxNear(g, 'warp', e.x, e.y);
@@ -572,7 +580,7 @@ function doAction(g, e) {                                   // SPACE：ワープ
   if (g.phase === 'place') {
     if (e.role !== 'oni' || g.eraser.placed) return;
     if (validSpot(g, e.x, e.y)) placeEraser(g, e.x, e.y);
-    else evTo(e.id, '❌ ここには置けない（エレベーター・ワープ・宝箱などに近すぎる）');
+    else evTo(e.id, '❌ ここには置けない');
     return;
   }
   if (e.role === 'oni') {
@@ -589,34 +597,31 @@ function doAction(g, e) {                                   // SPACE：ワープ
   if (e.board) return;
   const c = nearestChest(g, e);
   if (!c) return;
-  if (e.item) { evTo(e.id, '⚠ アイテムは1個までしか持てない'); return; }
+  if (e.item) { evTo(e.id, '⚠ アイテムは1個まで'); return; }
   e.item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
   c.open = true; c.respawn = CHEST_RESPAWN;
-  evTo(e.id, '🎁 ' + ITEM_NAME[e.item] + ' を入手！' + (e.item === 'stun' ? '（鬼が近づくと自動発動）' : '（Qキー / ボタンで使用）'));
+  evTo(e.id, '🎁 ' + ITEM_NAME[e.item] + ' を入手！');
 }
 function nearestChest(g, e) {
   for (const c of g.chests) if (!c.open && Math.hypot(e.x - c.x, e.y - c.y) < RUNNER_R + 36) return c;
   return null;
 }
-function useItem(g, e) {                                    // Q：ブーツ／透明化（スタンは自動）
+function useItem(g, e) {
   if (g.phase !== 'play' || g.status !== 'playing' || !e.alive || e.role !== 'runner' || !e.item || e.board) return;
-  if (e.item === 'stun') { evTo(e.id, '💫 スタングレネードは鬼が近づくと自動で発動する'); return; }
+  if (e.item === 'stun') { evTo(e.id, '💫 スタングレネードは自動発動します'); return; }
   const it = e.item; e.item = null;
   if (it === 'boots') { e.boost = BOOST_SEC; evTo(e.id, '👟 スピードアップ！'); }
-  else if (it === 'invis') { e.invis = INVIS_SEC; evTo(e.id, '👻 透明化！鬼から完全に見えない'); }
+  else if (it === 'invis') { e.invis = INVIS_SEC; evTo(e.id, '👻 透明化！鬼から見えなくなります！'); }
 }
-
-function doCrouch(g, e) {                                   // しゃがみ：3秒間 完全に透明（CT10秒・移動速度低下）
+function doCrouch(g, e) {
   if (g.phase !== 'play' || g.status !== 'playing' || !e.alive || e.role !== 'runner' || e.board) return;
-  if (!g.rules.crouch) { evTo(e.id, '❌ このルームではしゃがみが無効'); return; }
+  if (!g.rules.crouch) { evTo(e.id, '❌ このルームではしゃがみ無効'); return; }
   if (e.crouch > 0) return;
   if (e.crouchCd > 0) { evTo(e.id, '⏳ しゃがみはあと ' + Math.ceil(e.crouchCd) + ' 秒'); return; }
   e.crouch = CROUCH_SEC; e.crouchCd = CROUCH_CD;
-  evTo(e.id, '🫥 しゃがみ！3秒間 完全に透明（移動は遅くなる）');
+  evTo(e.id, '🫥 しゃがみ！3秒間透明');
 }
 
-// ================= 受信者ごとの状態 =================
-// 明るい視界は壁越しでも見える（視線判定はしない）。範囲外の情報はサーバーが送らない
 function snapshot(g, r) {
   let ref = r;
   if (r.role === 'runner' && !r.alive) ref = g.ents.find((e) => e.role === 'runner' && e.alive) || r;
@@ -625,6 +630,9 @@ function snapshot(g, r) {
   const ents = [];
   for (const e of g.ents) {
     if (e === r) continue;
+    // 透明化しているキャラクターは視界に入っていてもスナップショットから除外（鬼に見えないようにする）
+    if (hidden(e) && r.role !== e.role) continue;
+
     const info = { id: e.id, n: e.name, x: e.x, y: e.y, role: e.role, al: e.alive, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, sk: e.skin, iv: hidden(e), cr: e.crouch > 0, hp: e.hp };
     if (e.role === r.role) ents.push(info);
     else if (e.alive && !hidden(e) && Math.hypot(e.x - ref.x, e.y - ref.y) < ghost) ents.push(info);
@@ -643,7 +651,7 @@ function snapshot(g, r) {
     const c = g.ents.find((e) => e.hasEraser);
     if (c && !hidden(c) && !c.board) ping = { x: c.x, y: c.y };
   }
-  let rev = null;                                           // 突入したエレベーターの位置（鬼にだけピンポイント公開）
+  let rev = null;
   if (r.role === 'oni' && g.board) { const c = elevCenter(g.board.side); rev = { x: c.x, y: c.y, side: g.board.side, left: g.board.left }; }
   return {
     s: g.status, ph: g.phase, pl: Math.max(0, g.placeLeft), placed: E.placed, t: g.time, slide: g.slide, role: r.role, side: ref.side,
@@ -660,7 +668,6 @@ function snapshot(g, r) {
   };
 }
 
-// ================= 60fps ループ =================
 let last = process.hrtime.bigint();
 setInterval(() => {
   const now = process.hrtime.bigint();
@@ -680,13 +687,14 @@ setInterval(() => {
       const snap = snapshot(g, e);
       if (changed) s.emit('state', snap); else s.volatile.emit('state', snap);
     }
-    // CPU戦は自動でロビーに戻さない（タイトルへ戻るのはプレイヤーの操作）
     if (g.status !== 'playing' && !room.solo && Date.now() > g.endAt) toLobby(room);
   }
 }, 1000 / 60);
 
 // ================= Socket.io =================
 io.on('connection', (socket) => {
+  globalUsers.set(socket.id, { name: 'プレイヤー', password: '', friends: [] });
+
   socket.on('create', (d) => {
     leaveRoom(socket.id);
     const room = makeRoom(socket, false);
@@ -694,7 +702,7 @@ io.on('connection', (socket) => {
     addPlayer(room, socket, d && d.name, 'auto', d && d.skin);
     sendLobby(room);
   });
-  socket.on('solo', (d) => {                       // CPUと戦う：1人で即スタート。終了後はタイトルへ
+  socket.on('solo', (d) => {
     leaveRoom(socket.id);
     const room = makeRoom(socket, true);
     if (!room) return;
@@ -711,6 +719,56 @@ io.on('connection', (socket) => {
     addPlayer(room, socket, d && d.name, 'auto', d && d.skin);
     sendLobby(room);
   });
+
+  socket.on('updateProfile', (data) => {
+    let u = globalUsers.get(socket.id);
+    if (!u) {
+      u = { name: 'プレイヤー', password: '', friends: [] };
+      globalUsers.set(socket.id, u);
+    }
+    if (data.name) u.name = cleanName(data.name);
+    if (data.password !== undefined) u.password = String(data.password).trim();
+    socket.emit('profileUpdated', { name: u.name, friends: u.friends });
+  });
+
+  socket.on('addFriendByPassword', (data) => {
+    const targetName = cleanName(data.name);
+    const targetPass = String(data.password || '').trim();
+
+    let myU = globalUsers.get(socket.id);
+    if (!myU) return;
+
+    if (targetName === myU.name) {
+      socket.emit('friendAddResult', { success: false, msg: '自分自身をフレンドに追加することはできません' });
+      return;
+    }
+
+    let found = false;
+    for (const [otherId, otherU] of globalUsers.entries()) {
+      if (otherId !== socket.id && otherU.name === targetName) {
+        if (otherU.password && otherU.password === targetPass) {
+          found = true;
+          if (!myU.friends.includes(targetName)) myU.friends.push(targetName);
+          if (!otherU.friends.includes(myU.name)) otherU.friends.push(myU.name);
+
+          socket.emit('friendAddResult', { success: true, msg: `${targetName} さんをフレンドに追加しました！`, friends: myU.friends });
+
+          const otherSock = io.sockets.sockets.get(otherId);
+          if (otherSock) {
+            otherSock.emit('friendAddResult', { success: true, msg: `${myU.name} さんがあなたをフレンドに追加しました！`, friends: otherU.friends });
+          }
+        } else {
+          socket.emit('friendAddResult', { success: false, msg: 'パスワードが間違っているか、一致しません' });
+          return;
+        }
+        break;
+      }
+    }
+    if (!found) {
+      socket.emit('friendAddResult', { success: false, msg: '指定されたユーザー名のプレイヤーが見つかりません' });
+    }
+  });
+
   socket.on('setRole', (role) => {
     const room = sockRoom.get(socket.id);
     if (!room || room.state !== 'lobby' || !['auto', 'runner', 'oni'].includes(role)) return;
@@ -750,7 +808,7 @@ io.on('connection', (socket) => {
     const room = sockRoom.get(socket.id);
     if (room && !room.solo && room.game && room.game.status !== 'playing') toLobby(room);
   });
-  socket.on('setRules', (r) => {                    // ホストだけがロビーでルールを変更できる
+  socket.on('setRules', (r) => {
     const room = sockRoom.get(socket.id);
     if (!room || room.host !== socket.id || room.state !== 'lobby' || room.solo) return;
     room.rules = cleanRules(r);
@@ -762,7 +820,7 @@ io.on('connection', (socket) => {
     const e = g && g.ents.find((x) => x.id === socket.id);
     if (e) doCrouch(g, e);
   });
-  socket.on('chat', (i) => {                        // 簡易スタンプ・定型文（サーバー側の固定リストの番号だけを受け付ける）
+  socket.on('chat', (i) => {
     i = parseInt(i, 10);
     const room = sockRoom.get(socket.id);
     if (!room || !(i >= 0 && i < CHATS.length)) return;
@@ -772,9 +830,11 @@ io.on('connection', (socket) => {
     for (const id of room.players.keys()) io.to(id).emit('chat', { id: socket.id, i });
   });
   socket.on('leave', () => leaveRoom(socket.id));
-  socket.on('disconnect', () => leaveRoom(socket.id));
+  socket.on('disconnect', () => {
+    globalUsers.delete(socket.id);
+    leaveRoom(socket.id);
+  });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log('Server listening on ' + PORT));
-
