@@ -150,7 +150,7 @@ function nextTileToward(g, fx, fy, tx, ty, ent) {
 // ユーザー＆フレンド・ルーム管理システム
 const rooms = new Map();
 const sockRoom = new Map();
-const globalUsers = new Map(); // socket.id または unique user info
+const globalUsers = new Map(); // socket.id -> { name, password, friends: [] }
 
 function newCode() {
   for (let i = 0; i < 1000; i++) {
@@ -176,11 +176,15 @@ function makeRoom(socket, solo) {
   return room;
 }
 function addPlayer(room, socket, name, role, skin) {
-  const u = globalUsers.get(socket.id) || { friends: [], requests: [] };
-  globalUsers.set(socket.id, u);
-  room.players.set(socket.id, { id: socket.id, name: cleanName(name), role, skin: cleanSkin(skin) });
+  let u = globalUsers.get(socket.id);
+  if (!u) {
+    u = { name: cleanName(name), password: '', friends: [] };
+    globalUsers.set(socket.id, u);
+  } else {
+    u.name = cleanName(name);
+  }
+  room.players.set(socket.id, { id: socket.id, name: u.name, role, skin: cleanSkin(skin) });
   sockRoom.set(socket.id, room);
-  broadcastGlobalUserList();
 }
 function leaveRoom(id) {
   const room = sockRoom.get(id);
@@ -200,21 +204,6 @@ function leaveRoom(id) {
   if (room.players.size === 0) { rooms.delete(room.code); return; }
   if (room.host === id) room.host = room.players.keys().next().value;
   sendLobby(room);
-  broadcastGlobalUserList();
-}
-
-function broadcastGlobalUserList() {
-  const list = [];
-  for (const [id, room] of sockRoom.entries()) {
-    // 参加中のプレイヤー情報
-  }
-  // 全グローバルユーザーの状態を配信する例
-  for (const [id, u] of globalUsers.entries()) {
-    const s = io.sockets.sockets.get(id);
-    if (!s) continue;
-    const r = sockRoom.get(id);
-    // フレンドのステータス更新などをここに記述可能
-  }
 }
 
 function addEnt(g, id, name, role, cpu, side, skin) {
@@ -688,6 +677,9 @@ setInterval(() => {
 
 // ================= Socket.io =================
 io.on('connection', (socket) => {
+  // 初期ユーザーデータ登録
+  globalUsers.set(socket.id, { name: 'プレイヤー', password: '', friends: [] });
+
   socket.on('create', (d) => {
     leaveRoom(socket.id);
     const room = makeRoom(socket, false);
@@ -713,32 +705,57 @@ io.on('connection', (socket) => {
     sendLobby(room);
   });
 
-  // ===== フレンド機能・参加申請システム =====
-  socket.on('requestJoin', (data) => {
-    // data.targetCode またはフレンドの部屋コードへの参加申請
-    const targetRoom = rooms.get(data.code);
-    if (!targetRoom) { socket.emit('errmsg', 'ルームが見つかりません'); return; }
-    const hostSocketId = targetRoom.host;
-    const applicantName = cleanName(data.name);
-    // ホストへ参加申請イベントを通知
-    io.to(hostSocketId).emit('joinRequestPrompt', { applicantId: socket.id, applicantName, code: data.code });
-    socket.emit('ev', 'ホストに参加申請を送信しました…');
+  // プロフィール（ユーザー名＆フレンドパスワード）の更新
+  socket.on('updateProfile', (data) => {
+    let u = globalUsers.get(socket.id);
+    if (!u) {
+      u = { name: 'プレイヤー', password: '', friends: [] };
+      globalUsers.set(socket.id, u);
+    }
+    if (data.name) u.name = cleanName(data.name);
+    if (data.password !== undefined) u.password = String(data.password).trim();
+    socket.emit('profileUpdated', { name: u.name, friends: u.friends });
   });
 
-  socket.on('hostRespondJoin', (data) => {
-    // data: { applicantId, code, accept }
-    const room = rooms.get(data.code);
-    if (!room || room.host !== socket.id) return;
-    if (data.accept) {
-      const applicantSock = io.sockets.sockets.get(data.applicantId);
-      if (applicantSock) {
-        leaveRoom(data.applicantId);
-        addPlayer(room, applicantSock, data.applicantName, 'auto', 0);
-        sendLobby(room);
-        applicantSock.emit('joinAccepted', room.code);
+  // フレンドパスワード認証によるフレンド追加処理
+  socket.on('addFriendByPassword', (data) => {
+    const targetName = cleanName(data.name);
+    const targetPass = String(data.password || '').trim();
+
+    let myU = globalUsers.get(socket.id);
+    if (!myU) return;
+
+    if (targetName === myU.name) {
+      socket.emit('friendAddResult', { success: false, msg: '自分自身をフレンドに追加することはできません' });
+      return;
+    }
+
+    // 該当する他のプレイヤーを探す
+    let found = false;
+    for (const [otherId, otherU] of globalUsers.entries()) {
+      if (otherId !== socket.id && otherU.name === targetName) {
+        if (otherU.password && otherU.password === targetPass) {
+          found = true;
+          // 相互にフレンド登録
+          if (!myU.friends.includes(targetName)) myU.friends.push(targetName);
+          if (!otherU.friends.includes(myU.name)) otherU.friends.push(myU.name);
+
+          socket.emit('friendAddResult', { success: true, msg: `${targetName} さんをフレンドに追加しました！`, friends: myU.friends });
+
+          // 相手がオンラインなら通知を飛ばす
+          const otherSock = io.sockets.sockets.get(otherId);
+          if (otherSock) {
+            otherSock.emit('friendAddResult', { success: true, msg: `${myU.name} さんがあなたをフレンドに追加しました！`, friends: otherU.friends });
+          }
+        } else {
+          socket.emit('friendAddResult', { success: false, msg: 'パスワードが間違っているか、一致しません' });
+          return;
+        }
+        break;
       }
-    } else {
-      io.to(data.applicantId).emit('errmsg', 'ホストに参加申請を拒否されました');
+    }
+    if (!found) {
+      socket.emit('friendAddResult', { success: false, msg: '指定されたユーザー名のプレイヤーが見つかりません' });
     }
   });
 
@@ -803,7 +820,10 @@ io.on('connection', (socket) => {
     for (const id of room.players.keys()) io.to(id).emit('chat', { id: socket.id, i });
   });
   socket.on('leave', () => leaveRoom(socket.id));
-  socket.on('disconnect', () => leaveRoom(socket.id));
+  socket.on('disconnect', () => {
+    globalUsers.delete(socket.id);
+    leaveRoom(socket.id);
+  });
 });
 
 const PORT = process.env.PORT || 3000;
