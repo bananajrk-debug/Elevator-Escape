@@ -47,7 +47,7 @@
 
   /* ---------- ハンバーガーメニュー & モーダル ---------- */
   #menuBtn { position: fixed; top: 16px; left: 16px; z-index: 25; width: 48px; height: 48px; font-size: 24px; padding: 0; border-radius: 50%; }
-  #menuModal, #approvalModal { background: rgba(5,3,20,.88); align-items: center; justify-content: center; z-index: 40; }
+  #menuModal { background: rgba(5,3,20,.88); align-items: center; justify-content: center; z-index: 40; }
   .panel { background: #1e1b4b; border: 4px solid #ffd23f; border-radius: 18px; padding: 22px 28px; width: min(92vw, 460px); box-shadow: 0 10px 0 rgba(0,0,0,.4); }
   .panel h2 { margin: 0 0 10px; font-style: italic; color: #ffd23f; }
   .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
@@ -55,14 +55,12 @@
   .tab-btn.active { background: #ffd23f; color: #3a2a00; }
 
   /* ---------- フォートナイト・ブロスタ風ロビー ---------- */
-  #lobby { }
   #lobby .top-left { position: absolute; top: 16px; left: 76px; z-index: 2; display: flex; gap: 8px; }
   #codePill { position: absolute; top: 14px; right: 16px; z-index: 2; cursor: pointer; background: rgba(10,6,32,.75); border: 3px solid #ffd23f; border-radius: 16px; padding: 6px 18px 8px; text-align: center; box-shadow: 0 5px 0 #c79a00; }
   #codePill:active { transform: translateY(3px); box-shadow: 0 2px 0 #c79a00; }
   #codePill .lab { font-size: 11px; letter-spacing: 3px; color: #ffd23f; font-weight: 800; }
   #codePill .num { font-size: 32px; font-weight: 900; letter-spacing: 6px; font-style: italic; }
 
-  /* ステージ上に全員のアバターを並べる */
   .stage-arena { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; gap: 24px; flex-wrap: wrap; padding: 80px 20px 140px; }
   .spot-podium { position: absolute; width: 640px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.2), rgba(255,255,255,0) 70%); top: 55%; left: 50%; transform: translate(-50%, -50%); }
   
@@ -74,14 +72,12 @@
 
   @keyframes bob { 50% { transform: translateY(-8px); } }
 
-  .roster { display: none; } /* 旧ロスターリストは非表示にしステージ配置へ移行 */
   .bottom-left { position: absolute; left: 16px; bottom: 18px; z-index: 2; display: flex; gap: 10px; flex-wrap: wrap; }
   .bottom-left .btn { font-size: 16px; padding: 14px 18px; }
   .bottom-left .btn.active { background: #ffd23f; color: #3a2a00; box-shadow: 0 5px 0 #c79a00; }
   #start { position: absolute; right: 18px; bottom: 18px; z-index: 2; font-size: 32px; padding: 20px 46px; font-style: italic; }
   #lnote { position: absolute; bottom: 92px; right: 22px; z-index: 2; font-size: 13px; color: #d6d0ff; text-align: right; max-width: 320px; }
 
-  /* ---------- コード拡大モーダル等 ---------- */
   #codeModal { background: rgba(8,4,28,.92); align-items: center; justify-content: center; flex-direction: column; cursor: pointer; z-index: 8; }
   #codeModal .lab { letter-spacing: 8px; color: #ffd23f; font-weight: 900; font-size: clamp(14px, 3vw, 28px); }
   #codeModal .big { font-size: clamp(60px, 22vw, 260px); font-weight: 900; font-style: italic; letter-spacing: .12em; line-height: 1.1; -webkit-text-stroke: 4px #1b0f4d; paint-order: stroke fill; background: linear-gradient(#fff6b0, #ffb703); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 8px 0 #1b0f4d; }
@@ -204,32 +200,30 @@
       <button class="tab-btn active" id="tabProfileBtn">プロフィール</button>
       <button class="tab-btn" id="tabFriendsBtn">フレンド</button>
     </div>
+    
+    <!-- プロフィール設定タブ -->
     <div id="contentProfile">
       <div class="row"><span>ユーザー名</span></div>
       <input id="profileNameField" class="field" maxlength="12" placeholder="プレイヤー名">
+      <div class="row" style="margin-top:12px;"><span>フレンド追加パスワード (自由設定)</span></div>
+      <input id="profilePassField" class="field" type="password" maxlength="20" placeholder="友達に教える合言葉">
       <div style="text-align:center;margin-top:14px"><button class="btn yellow" id="saveProfileBtn">保存する</button></div>
     </div>
+
+    <!-- フレンド追加＆リストタブ -->
     <div id="contentFriends" style="display:none;">
-      <div style="font-size:14px;color:#cbd5e1;margin-bottom:8px">フレンドのルームへワンタップ参加申請！</div>
-      <div class="row"><input id="friendCodeInput" class="field" placeholder="友達のルームコード(5桁)" maxlength="5"></div>
-      <button class="btn blue" id="sendJoinReqBtn" style="width:100%;padding:10px;margin-bottom:12px">フレンドの部屋へ参加申請を送る</button>
-      <div id="friendListContainer" style="max-height:150px;overflow:auto;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px">
-        <p style="text-align:center;color:#9ca3af;font-size:13px;">登録フレンドはまだいません</p>
+      <div style="font-size:14px;color:#cbd5e1;margin-bottom:8px">友達のユーザー名とパスワードを入力して追加！</div>
+      <div class="row"><input id="addFriendNameInput" class="field" placeholder="友達のユーザー名" maxlength="12"></div>
+      <div class="row"><input id="addFriendPassInput" class="field" type="password" placeholder="友達のパスワード" maxlength="20"></div>
+      <button class="btn blue" id="submitAddFriendBtn" style="width:100%;padding:10px;margin-bottom:12px">フレンドを追加する</button>
+      
+      <div style="font-size:14px;color:#ffd23f;margin-top:10px;margin-bottom:4px;font-weight:800;">フレンドリスト</div>
+      <div id="friendListContainer" style="max-height:140px;overflow:auto;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px">
+        <p style="text-align:center;color:#9ca3af;font-size:13px;" id="noFriendsText">登録フレンドはまだいません</p>
       </div>
     </div>
-    <div style="text-align:center;margin-top:18px"><button class="btn gray" id="menuCloseBtn" style="padding:10px 24px">閉じる</button></div>
-  </div>
-</div>
 
-<!-- ホスト承認用ポップアップモーダル -->
-<div id="approvalModal" class="overlay">
-  <div class="panel" style="text-align:center;">
-    <h2>🔔 参加申請</h2>
-    <p id="approvalMsg" style="font-size:18px;margin:16px 0;font-weight:800;color:#fde68a;"></p>
-    <div style="display:flex;gap:12px;justify-content:center;">
-      <button class="btn red" id="rejectBtn" style="padding:12px 24px;">拒否</button>
-      <button class="btn yellow" id="acceptBtn" style="padding:12px 24px;">承認</button>
-    </div>
+    <div style="text-align:center;margin-top:18px"><button class="btn gray" id="menuCloseBtn" style="padding:10px 24px">閉じる</button></div>
   </div>
 </div>
 
@@ -272,7 +266,6 @@
   <div class="top-left"><button id="leave" class="btn gray" style="font-size:16px;padding:10px 18px">◀ 退出</button> <button id="rulesBtn" class="btn gray" style="font-size:16px;padding:10px 18px">⚙ ルール設定</button></div>
   <div id="codePill"><div class="lab">ROOM CODE</div><div class="num" id="codeNum">-----</div></div>
   
-  <!-- ステージ上に全員のアバターを綺麗に並べるエリア -->
   <div class="stage-arena">
     <div class="spot-podium"></div>
     <div id="brawlersArena" style="display:flex;gap:30px;justify-content:center;align-items:center;flex-wrap:wrap;z-index:2;position:relative;"></div>
@@ -349,12 +342,14 @@ const ITEM = { stun: { i: '💫', n: 'スタングレネード' }, boots: { i: '
 const PADCOL = ['#c084fc', '#2dd4bf'];
 
 // ハンバーガーメニュー制御
-let pendingApplicant = null;
+let myFriendsList = [];
 $('menuBtn').onclick = () => {
   $('profileNameField').value = $('name').value;
+  try { $('profilePassField').value = localStorage.getItem('ppass') || ''; } catch(e){}
   show('menuModal', true);
 };
 $('menuCloseBtn').onclick = () => show('menuModal', false);
+
 $('tabProfileBtn').onclick = () => {
   $('tabProfileBtn').classList.add('active'); $('tabFriendsBtn').classList.remove('active');
   $('contentProfile').style.display = 'block'; $('contentFriends').style.display = 'none';
@@ -363,44 +358,59 @@ $('tabFriendsBtn').onclick = () => {
   $('tabFriendsBtn').classList.add('active'); $('tabProfileBtn').classList.remove('active');
   $('contentFriends').style.display = 'block'; $('contentProfile').style.display = 'none';
 };
+
+// プロフィール＆パスワード保存
 $('saveProfileBtn').onclick = () => {
   const v = $('profileNameField').value.trim();
-  if (v) { $('name').value = v; try { localStorage.setItem('pname', v); } catch(e){} toast('プロフィール名を保存しました！'); }
+  const pass = $('profilePassField').value.trim();
+  if (v) {
+    $('name').value = v;
+    try {
+      localStorage.setItem('pname', v);
+      localStorage.setItem('ppass', pass);
+    } catch(e){}
+    socket.emit('updateProfile', { name: v, password: pass });
+    toast('プロフィール＆パスワードを保存しました！');
+  }
   show('menuModal', false);
 };
-$('sendJoinReqBtn').onclick = () => {
-  const code = $('friendCodeInput').value.trim();
-  if (code.length === 5) {
-    socket.emit('requestJoin', { code, name: $('name').value || 'プレイヤー' });
-    show('menuModal', false);
-  } else {
-    alert('有効な5桁のルームコードを入力してください');
+
+// フレンド追加フォーム送信
+$('submitAddFriendBtn').onclick = () => {
+  const fName = $('addFriendNameInput').value.trim();
+  const fPass = $('addFriendPassInput').value.trim();
+  if (!fName || !fPass) {
+    alert('友達のユーザー名とパスワードの両方を入力してください');
+    return;
   }
+  socket.emit('addFriendByPassword', { name: fName, password: fPass });
+  $('addFriendNameInput').value = '';
+  $('addFriendPassInput').value = '';
 };
 
-// ホストへの参加申請ポップアップ処理
-socket.on('joinRequestPrompt', (d) => {
-  pendingApplicant = d;
-  $('approvalMsg').textContent = `${d.applicantName} さんから参加申請が届きました！`;
-  show('approvalModal', true);
-});
-$('acceptBtn').onclick = () => {
-  if (pendingApplicant) {
-    socket.emit('hostRespondJoin', { applicantId: pendingApplicant.applicantId, code: pendingApplicant.code, accept: true });
-    show('approvalModal', false);
-    pendingApplicant = null;
+// サーバーからのフレンド追加結果通知
+socket.on('friendAddResult', (data) => {
+  toast(data.msg);
+  if (data.success && data.friends) {
+    myFriendsList = data.friends;
+    updateFriendUI();
   }
-};
-$('rejectBtn').onclick = () => {
-  if (pendingApplicant) {
-    socket.emit('hostRespondJoin', { applicantId: pendingApplicant.applicantId, code: pendingApplicant.code, accept: false });
-    show('approvalModal', false);
-    pendingApplicant = null;
-  }
-};
-socket.on('joinAccepted', (code) => {
-  toast('参加申請が承認されました！入室します…');
 });
+
+function updateFriendUI() {
+  const container = $('friendListContainer');
+  container.innerHTML = '';
+  if (!myFriendsList.length) {
+    container.innerHTML = '<p style="text-align:center;color:#9ca3af;font-size:13px;">登録フレンドはまだいません</p>';
+    return;
+  }
+  myFriendsList.forEach(fName => {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:6px 10px; margin-bottom:4px; background:rgba(255,255,255,0.1); border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:14px;';
+    item.innerHTML = `<span>👤 ${fName}</span> <span style="color:#4ade80; font-size:12px;">フレンド</span>`;
+    container.appendChild(item);
+  });
+}
 
 // ================= 設定・音量・デバイス =================
 let settings = { bgm: 0.5, se: 0.8, mode: null };
@@ -468,8 +478,20 @@ function resize() {
 addEventListener('resize', resize); addEventListener('orientationchange', resize); resize();
 setScreen('title');
 
-try { $('name').value = localStorage.getItem('pname') || ''; } catch (e) {}
-function nm() { const v = $('name').value.trim(); try { localStorage.setItem('pname', v); } catch (e) {} return v; }
+try {
+  $('name').value = localStorage.getItem('pname') || '';
+  socket.emit('updateProfile', { name: $('name').value, password: localStorage.getItem('ppass') || '' });
+} catch (e) {}
+
+function nm() {
+  const v = $('name').value.trim();
+  try {
+    localStorage.setItem('pname', v);
+    socket.emit('updateProfile', { name: v, password: localStorage.getItem('ppass') || '' });
+  } catch (e) {}
+  return v;
+}
+
 $('btnCreate').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('create', { name: nm(), skin: skinSel }); };
 $('btnSolo').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('solo', { name: nm(), skin: skinSel }); };
 $('btnJoin').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('join', { name: nm(), code: $('code').value, skin: skinSel }); };
@@ -488,7 +510,6 @@ socket.on('lobby', (d) => {
   if (!inGame) { show('title', false); show('lobby', true); setScreen('lobby'); setBgm('lobby'); renderLobby(); }
 });
 
-// フォートナイト・ブロスタ風ロビーのレンダリング
 function renderLobby() {
   const d = lobbyData, me = d.players.find((p) => p.id === d.you) || { name: '', role: 'auto', skin: 0 };
   $('codeNum').textContent = d.code; $('codeBig').textContent = d.code;
@@ -503,12 +524,10 @@ function renderLobby() {
     avatar.textContent = roleEmoji[p.role];
     avatar.style.background = 'radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), ' + (p.role === 'oni' ? sk.o : sk.c) + ' 60%)';
     
-    // ホストなら名前に 👑 を付与
     const namePlate = document.createElement('div');
     namePlate.className = 'brawler-nameplate';
     namePlate.textContent = p.name + (p.id === d.host ? ' 👑' : '');
 
-    // 足元にロールアイコン
     const roleFoot = document.createElement('div');
     roleFoot.className = 'brawler-rolefoot';
     roleFoot.textContent = roleEmoji[p.role];
@@ -610,7 +629,6 @@ $('chatBtn').onclick = () => { initAudio(); toggleChat(); };
 socket.on('chat', (m) => { bubbles[m.id] = { i: m.i, t0: performance.now() }; });
 buildChat();
 
-// ルール設定
 const RULE_DEF = [
   { k: 'matchTime', lab: '試合時間', min: 120, max: 600, st: 30, u: '秒' },
   { k: 'placeTime', lab: '設置時間', min: 10, max: 60, st: 5, u: '秒' },
