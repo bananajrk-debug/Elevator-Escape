@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>消しゴム争奪＆エレベーター脱出</title>
+<title>消しゴム奪取＆エレベーター脱出</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: "Hiragino Sans", "Meiryo", "Noto Sans JP", sans-serif; color: #fff; user-select: none; }
@@ -15,7 +15,6 @@
   #banner { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 800; text-align: center; text-shadow: 0 0 8px #000; display: none; pointer-events: none; }
   #placeBtn { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); display: none; z-index: 4; }
 
-  /* ---------- 共通UI ---------- */
   .overlay { position: fixed; inset: 0; display: none; z-index: 5; }
   .btn { border: none; color: #fff; cursor: pointer; font-weight: 900; font-family: inherit; border-radius: 14px; transition: transform .08s, box-shadow .08s; letter-spacing: 1px; }
   .btn:active { transform: translateY(4px); }
@@ -32,7 +31,6 @@
   .bg::before { content: ""; position: absolute; inset: -50%; background: repeating-linear-gradient(60deg, rgba(255,255,255,.045) 0 40px, rgba(255,255,255,0) 40px 120px); animation: slide 14s linear infinite; }
   @keyframes slide { to { transform: translateX(160px); } }
 
-  /* ---------- スタート画面 ---------- */
   #title { align-items: center; justify-content: center; flex-direction: column; text-align: center; }
   .logo { position: relative; font-size: clamp(34px, 7vw, 76px); font-weight: 900; font-style: italic; line-height: 1.05; -webkit-text-stroke: 3px #1b0f4d; paint-order: stroke fill; text-shadow: 0 6px 0 #1b0f4d, 0 12px 24px rgba(0,0,0,.5); background: linear-gradient(#fff6b0, #ffb703); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .logo small { display: block; font-size: .4em; -webkit-text-stroke: 2px #1b0f4d; letter-spacing: 4px; }
@@ -45,41 +43,23 @@
   .joinrow .btn { font-size: 18px; padding: 0 22px; white-space: nowrap; }
   #err { min-height: 22px; color: #ff9aa2; font-weight: 800; }
 
-  /* ---------- ロビー ---------- */
-  #lobby { }
-  #lobby .top-left { position: absolute; top: 16px; left: 16px; z-index: 2; }
   #codePill { position: absolute; top: 14px; right: 16px; z-index: 2; cursor: pointer; background: rgba(10,6,32,.75); border: 3px solid #ffd23f; border-radius: 16px; padding: 6px 18px 8px; text-align: center; box-shadow: 0 5px 0 #c79a00; }
   #codePill:active { transform: translateY(3px); box-shadow: 0 2px 0 #c79a00; }
   #codePill .lab { font-size: 11px; letter-spacing: 3px; color: #ffd23f; font-weight: 800; }
   #codePill .num { font-size: 32px; font-weight: 900; letter-spacing: 6px; font-style: italic; }
   .stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
   .spot { position: absolute; width: 520px; height: 520px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.22), rgba(255,255,255,0) 65%); top: 50%; left: 50%; transform: translate(-50%, -58%); }
-  .avatar { position: relative; width: 190px; height: 190px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 96px; background: radial-gradient(circle at 35% 30%, #7db6ff, #2f5fd0); border: 6px solid #fff; box-shadow: 0 14px 0 rgba(0,0,0,.35), 0 0 60px rgba(120,160,255,.6); animation: bob 2.2s ease-in-out infinite; }
-  .avatar.oni { background: radial-gradient(circle at 35% 30%, #ff8d8d, #c21e1e); box-shadow: 0 14px 0 rgba(0,0,0,.35), 0 0 60px rgba(255,90,90,.6); }
-  .avatar.auto { background: radial-gradient(circle at 35% 30%, #d9d9ff, #6b6bd6); }
-  @keyframes bob { 50% { transform: translateY(-12px); } }
-  .nameplate { margin-top: 30px; padding: 8px 28px; font-size: 24px; font-weight: 900; font-style: italic; background: #ffd23f; color: #3a2a00; border-radius: 8px; transform: skewX(-10deg); box-shadow: 0 5px 0 #c79a00; }
-  .rolelabel { margin-top: 12px; font-weight: 800; letter-spacing: 3px; text-shadow: 0 2px 6px #000; }
-  .roster { position: absolute; left: 16px; top: 76px; width: 230px; z-index: 2; display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow: auto; }
-  .card { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-radius: 10px; background: rgba(10,6,32,.7); border-left: 6px solid #64748b; font-weight: 800; }
-  .card.runner { border-color: #2f8cff; } .card.oni { border-color: #ef4444; }
-  .card.me { background: rgba(255,210,63,.22); }
-  .badge { font-size: 12px; padding: 2px 9px; border-radius: 10px; background: #475569; white-space: nowrap; }
-  .badge.runner { background: #2f8cff; } .badge.oni { background: #ef4444; }
   .bottom-left { position: absolute; left: 16px; bottom: 18px; z-index: 2; display: flex; gap: 10px; flex-wrap: wrap; }
   .bottom-left .btn { font-size: 16px; padding: 14px 18px; }
   .bottom-left .btn.active { background: #ffd23f; color: #3a2a00; box-shadow: 0 5px 0 #c79a00; }
-  #start { position: absolute; right: 18px; bottom: 18px; z-index: 2; font-size: 32px; padding: 20px 46px; font-style: italic; }
   #lnote { position: absolute; bottom: 92px; right: 22px; z-index: 2; font-size: 13px; color: #d6d0ff; text-align: right; max-width: 320px; }
 
-  /* ---------- コード拡大モーダル ---------- */
   #codeModal { background: rgba(8,4,28,.92); align-items: center; justify-content: center; flex-direction: column; cursor: pointer; z-index: 8; }
   #codeModal .lab { letter-spacing: 8px; color: #ffd23f; font-weight: 900; font-size: clamp(14px, 3vw, 28px); }
   #codeModal .big { font-size: clamp(60px, 22vw, 260px); font-weight: 900; font-style: italic; letter-spacing: .12em; line-height: 1.1; -webkit-text-stroke: 4px #1b0f4d; paint-order: stroke fill; background: linear-gradient(#fff6b0, #ffb703); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 8px 0 #1b0f4d; }
   #codeModal .sub { margin-top: 16px; color: #cfc9f5; }
   #codeModal .btn { margin-top: 20px; font-size: 20px; padding: 14px 34px; }
 
-  /* ---------- 結果 ---------- */
   #result { background: rgba(0,0,0,.82); align-items: center; justify-content: center; flex-direction: column; text-align: center; }
   #result h1 { font-size: 64px; margin: 0 0 8px; font-style: italic; -webkit-text-stroke: 2px #000; }
   #result p { color: #ddd; margin: 6px 0; font-size: 18px; }
@@ -96,7 +76,7 @@
   .sk:hover { transform: scale(1.12); }
   .sk.sel { border-color: #ffd23f; box-shadow: 0 0 0 3px #3a2a00, 0 0 18px #ffd23f; transform: scale(1.18); }
   #skname { position: absolute; bottom: 76px; left: 50%; transform: translateX(-50%); font-weight: 800; font-size: 14px; color: #ffe58a; z-index: 2; }
-  /* ===== v5 追加 ===== */
+
   body { touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   #gear { position: fixed; top: 12px; right: 16px; z-index: 15; width: 48px; height: 48px; font-size: 24px; padding: 0; border-radius: 50%; }
   body.scr-lobby #gear { right: 250px; }
@@ -124,7 +104,7 @@
   #tbQ { right: 156px; bottom: 56px; width: 86px; height: 86px; font-size: 20px; }
   #tbMap { right: 30px; bottom: 164px; width: 62px; height: 62px; font-size: 15px; }
   #fullmap { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(86vh, 92vw); height: min(86vh, 92vw); display: none; z-index: 9; border: 4px solid #ffd23f; border-radius: 12px; background: #080614; }
-  /* ===== v6：レスポンシブ（iPad 4:3系・縦横どちらでも崩れない）===== */
+
   :root { --sp: clamp(86px, 18vmin, 140px); --sm: clamp(60px, 12vmin, 96px); --gap: 2vmin; --dp: clamp(120px, 27vmin, 210px); --mini: clamp(104px, 21vmin, 176px);
           --padR: calc(env(safe-area-inset-right, 0px) + 3vmin); --padL: calc(env(safe-area-inset-left, 0px) + 3vmin);
           --padB: calc(env(safe-area-inset-bottom, 0px) + 3.2vmin); --padT: calc(env(safe-area-inset-top, 0px) + 10px); }
@@ -155,7 +135,7 @@
   #itemBtn { right: var(--padR); bottom: calc(env(safe-area-inset-bottom, 0px) + 3vmin); }
   #fullmap { width: min(86dvh, 92vw); height: min(86dvh, 92vw); }
   .panel { max-height: 90dvh; overflow: auto; }
-  /* チャット／スタンプ */
+
   #chatBtn { position: fixed; z-index: 14; display: none; width: clamp(40px, 6.5vmin, 52px); height: clamp(40px, 6.5vmin, 52px); font-size: clamp(18px, 3.2vmin, 24px); padding: 0; border-radius: 50%;
              left: calc(env(safe-area-inset-left, 0px) + 12px); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); }
   body.scr-game #chatBtn { display: block; }
@@ -172,13 +152,12 @@
   .card { position: relative; }
   #avBubble { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: #fff; color: #111; padding: 6px 14px; border-radius: 14px; font-weight: 900; font-size: 22px; white-space: nowrap; display: none; z-index: 3; }
   .avwrap { position: relative; }
-  /* ルール設定 */
+
   #rules { background: rgba(5,3,20,.88); align-items: center; justify-content: center; z-index: 30; }
   .tgrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
   .tgrow .btn { flex: 1 1 45%; padding: 10px 6px; font-size: 15px; }
   .tgrow .btn.active { background: #22c55e; box-shadow: 0 5px 0 #15803d; }
   .row input[type=range]:disabled { opacity: .5; }
-  /* 縦向き（iPad縦・4:3縦）のロビー調整 */
   @media (max-aspect-ratio: 1/1) {
     .roster { top: 84px; width: min(230px, 42vw); max-height: 24dvh; }
     .skins { bottom: 100px; max-width: 94vw; }
@@ -186,7 +165,7 @@
     #lnote { bottom: 150px; right: 14px; }
     #start { font-size: 26px; padding: 16px 30px; }
   }
-  /* ===== v7：タイトル刷新 ===== */
+
   #title { background: radial-gradient(circle at 50% 24%, #7a4cf0 0%, #34207f 46%, #0e0a2c 100%); flex-direction: column; justify-content: center; }
   .tdeco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .tdeco i { position: absolute; display: block; opacity: .5; animation: floaty 9s ease-in-out infinite; }
@@ -210,7 +189,7 @@
   .tbtn::after { content: ""; position: absolute; top: 0; left: -60%; width: 38%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent); transform: skewX(-20deg); animation: shine 3.8s infinite; pointer-events: none; }
   @keyframes shine { 0% { left: -60%; } 40%, 100% { left: 150%; } }
   .tfoot { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); left: 0; right: 0; text-align: center; color: #b9b2e8; font-size: clamp(11px, 1.9vmin, 14px); letter-spacing: 1px; }
-  /* ===== v7：メニュー ===== */
+
   #menuBtn { position: fixed; z-index: 15; width: clamp(40px, 6.5vmin, 52px); height: clamp(40px, 6.5vmin, 52px); font-size: clamp(18px, 3.2vmin, 24px); padding: 0; border-radius: 50%; top: var(--padT); }
   body.scr-title #menuBtn { left: calc(env(safe-area-inset-left, 0px) + 16px); }
   body.scr-lobby #menuBtn { right: calc(env(safe-area-inset-right, 0px) + 312px); }
@@ -228,7 +207,7 @@
   #frList { max-height: 34dvh; overflow: auto; }
   #inviteBox { position: fixed; top: calc(var(--padT) + 64px); left: 50%; transform: translateX(-50%); z-index: 40; display: flex; flex-direction: column; gap: 8px; }
   .inv { background: #1e1b4b; border: 3px solid #ffd23f; border-radius: 12px; padding: 10px 14px; display: flex; gap: 10px; align-items: center; font-weight: 800; }
-  /* ===== v7：ロビーのステージ ===== */
+
   #stageCv { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .roster { display: none; }
   #readyBtn { position: absolute; right: 18px; bottom: 18px; z-index: 2; font-size: 30px; padding: 20px 40px; font-style: italic; }
@@ -258,7 +237,7 @@
 </div>
 <div id="settings" class="overlay">
   <div class="panel">
-    <h2>⚙ </h2>
+    <h2>⚙ 設定</h2>
     <div class="row"><span style="width:84px">BGM音量</span><input type="range" id="setBgm" min="0" max="100"><span class="val" id="vBgm"></span></div>
     <div class="row"><span style="width:84px">SE音量</span><input type="range" id="setSe" min="0" max="100"><span class="val" id="vSe"></span></div>
     <div style="font-weight:800;margin-top:6px">デバイス</div>
@@ -270,11 +249,10 @@
   </div>
 </div>
 <div id="ptimer"><div class="pt-lab" id="ptLab"></div><div class="pt-num" id="ptNum"></div><div class="pt-bar"><div id="ptFill"></div></div></div>
-<button class="btn red" id="placeBtn" style="font-size:22px;padding:16px 34px">ここに消しゴムを設置 (SPACE)</button>
+<button class="btn red" id="placeBtn" style="font-size:22px;padding:16px 34px">📍 ここに消しゴムを設置 (SPACE)</button>
 <button class="btn blue" id="itemBtn"></button>
 <div id="toast"></div>
 
-<!-- スタート画面 -->
 <div id="title" class="overlay bg" style="display:flex">
   <div class="tdeco">
     <i class="m" style="left:7%;top:16%;--r:-18deg"></i>
@@ -286,13 +264,13 @@
     <i class="g" style="left:6%;top:56%;animation-delay:-4s"></i>
   </div>
   <div class="tlogo-wrap">
-    <div class="tchip">Elevator Escape</div>
-    <div class="tlogo">消しゴム争奪</div>
+    <div class="tchip">ASYMMETRIC ESCAPE</div>
+    <div class="tlogo">消しゴム奪取</div>
     <div class="tribbon"><span>＆ エレベーター脱出</span></div>
   </div>
   <div class="center">
     <input id="name" class="field" maxlength="12" placeholder="プレイヤー名">
-    <button id="btnCreate" class="btn yellow big tbtn"><span class="ic"></span><span>ルームを作る<small>フレンドとプレイ ─ 5桁のルームコードを発行</small></span></button>
+    <button id="btnCreate" class="btn yellow big tbtn"><span class="ic"></span><span>ルームを作る<small>友達と遊ぶ ─ 5桁のルームコードを発行</small></span></button>
     <button id="btnSolo" class="btn blue big tbtn"><span class="ic"></span><span>CPUと戦う<small>ひとりで今すぐスタート</small></span></button>
     <div class="joinrow">
       <input id="code" class="field" inputmode="numeric" maxlength="5" placeholder="12345">
@@ -300,12 +278,11 @@
     </div>
     <div id="err"></div>
   </div>
-  <div class="tfoot">☰ メニュー（アカウント・フレンド） ／ ⚙ </div>
+  <div class="tfoot">☰ メニュー（アカウント・フレンド） ／ ⚙ 設定</div>
 </div>
 
-<!-- ロビー -->
 <div id="lobby" class="overlay bg">
-  <div class="top-left"><button id="leave" class="btn gray" style="font-size:16px;padding:10px 18px">◀ 退出</button> <button id="rulesBtn" class="btn gray" style="font-size:16px;padding:10px 18px">⚙ </button></div>
+  <div class="top-left"><button id="leave" class="btn gray" style="font-size:16px;padding:10px 18px">◀ 退出</button> <button id="rulesBtn" class="btn gray" style="font-size:16px;padding:10px 18px">⚙ ルール設定</button></div>
   <div id="codePill"><div class="lab">ROOM CODE</div><div class="num" id="codeNum">-----</div></div>
   <div class="stage"><div class="spot"></div><canvas id="stageCv"></canvas></div>
   <div id="skname"></div>
@@ -313,30 +290,29 @@
   <div class="bottom-left">
     <button class="btn gray" data-role="runner">🏃 逃げ側</button>
     <button class="btn gray" data-role="oni">👹 鬼側</button>
-    <button class="btn gray" data-role="auto">🎲 ランダム</button>
+    <button class="btn gray" data-role="auto">🎲 おまかせ</button>
   </div>
   <div id="lnote"></div>
   <button id="start" class="btn yellow">ゲーム開始 ▶</button>
-  <button id="readyBtn" class="btn blue">準備OK</button>
+  <button id="readyBtn" class="btn blue">準備OK ✓</button>
 </div>
 
-<!-- ルームコード拡大 -->
 <div id="codeModal" class="overlay">
   <div class="lab">ROOM CODE</div>
   <div class="big" id="codeBig">12345</div>
-  <div class="sub">（タップで閉じる）</div>
+  <div class="sub">友達にこのコードを伝えてね（タップで閉じる）</div>
   <button class="btn yellow" id="copyBtn">コードをコピー</button>
 </div>
 
 <div id="menu" class="overlay">
   <div class="panel" style="width:min(94vw,540px)">
     <div style="display:flex;justify-content:space-between;align-items:center"><h2>☰ メニュー</h2><button class="btn gray" id="menuClose" style="padding:8px 16px;font-size:16px;margin:0">✕</button></div>
-    <div class="tabs"><button class="btn yellow" id="tabAccBtn">アカウント</button><button class="btn gray" id="tabFrBtn">フレンド</button></div>
+    <div class="tabs"><button class="btn yellow" id="tabAccBtn">👤 アカウント</button><button class="btn gray" id="tabFrBtn">👥 フレンド</button></div>
     <div id="tabAcc">
       <div id="accStatus" class="note2"></div>
       <div class="fl-row"><input id="accName" class="field2" maxlength="12" placeholder="ユーザー名（ID）2〜12文字"><button id="accSave" class="btn yellow mini">登録</button></div>
       <div class="fl-row"><input id="accPass" class="field2" type="password" maxlength="20" placeholder="フレンドパスワード（4〜20文字）"><button id="passEye" class="btn gray mini">👁</button><button id="passSave" class="btn blue mini">設定</button></div>
-      <div class="note2">フレンドパスワードは<b>友達に教えるためのキー</b>です。友達があなたの「ユーザー名」と「このパスワード」を入力すると、お互いにフレンドになれます。</div>
+      <div class="note2">フレンドパスワードは<b>友達に教えるための秘密のキー</b>です。友達があなたの「ユーザー名」と「このパスワード」を入力すると、お互いにフレンドになれます。</div>
       <div class="note2" style="margin-top:14px"><b>ログインキー</b>（別の端末で同じアカウントを使うとき）</div>
       <div class="fl-row"><input id="keyVal" class="field2" readonly placeholder="（ログイン中のみ表示）"><button id="keyShow" class="btn gray mini">表示</button><button id="keyCopy" class="btn gray mini">コピー</button></div>
       <div class="fl-row"><input id="loginKey" class="field2" placeholder="ログインキーを貼り付け"><button id="loginBtn" class="btn blue mini">ログイン</button><button id="logoutBtn" class="btn gray mini">ログアウト</button></div>
@@ -344,7 +320,7 @@
     </div>
     <div id="tabFr" style="display:none">
       <div id="frList"></div>
-      <div class="note2" style="margin-top:12px"><b>フレンドを追加</b>：友達の「ユーザー名」と、友達が設定した「フレンドパスワード」を入力</div>
+      <div class="note2" style="margin-top:12px"><b>フレンドを追加</b>：友達のユーザー名とフレンドパスワードを入力</div>
       <div class="fl-row"><input id="frName" class="field2" maxlength="12" placeholder="友達のユーザー名"><input id="frPass" class="field2" type="password" maxlength="20" placeholder="友達のフレンドパスワード"><button id="frAdd" class="btn yellow mini">追加</button></div>
       <div id="frMsg" class="msg"></div>
     </div>
@@ -356,7 +332,7 @@
     <div id="rulesNote" style="font-size:13px;color:#cbd5e1;margin-bottom:6px"></div>
     <div id="rulesBody"></div>
     <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
-      <button class="btn gray" id="rulesReset" style="font-size:16px;padding:10px 18px">デフォルトに戻す</button>
+      <button class="btn gray" id="rulesReset" style="font-size:16px;padding:10px 18px">初期値に戻す</button>
       <button class="btn yellow" id="rulesApply" style="font-size:18px;padding:10px 26px">この設定にする</button>
       <button class="btn gray" id="rulesClose" style="font-size:16px;padding:10px 18px">閉じる</button>
     </div>
@@ -373,7 +349,7 @@
 const socket = io();
 const $ = (id) => document.getElementById(id);
 const cv = $('game');
-let ctx = cv.getContext('2d');          // ロビーのステージ描画では一時的に差し替える
+let ctx = cv.getContext('2d');
 const mini = $('mini'), mctx = mini.getContext('2d');
 const fm = $('fullmap'), fctx = fm.getContext('2d');
 const stageCv = $('stageCv'), sctx = stageCv.getContext('2d');
@@ -402,16 +378,14 @@ const SKINS = [
   { n: 'ゴールド', c: '#eab308', r: '#422006', m: '⚡', o: '#a16207', h: '#fde68a' },
   { n: 'モノクロ', c: '#e5e7eb', r: '#111827', m: '☻', o: '#450a0a', h: '#6b7280' }
 ];
-const ITEM = { stun: { i: '💫', n: 'スタングレネード' }, boots: { i: '👟', n: 'スピードブーツ' }, invis: { i: '👻', n: '透明化' } };
+const ITEM = { stun: { i: '💫', n: 'スタングレネード' }, boots: { i: '👟', n: 'スピードブーツ' } }; // 透明化アイテムを削除
 const PADCOL = ['#c084fc', '#2dd4bf'];
 
-// ================= 設定（音量・デバイス）=================
 let settings = { bgm: 0.5, se: 0.8, mode: null };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('settings') || '{}')); } catch (e) {}
 if (!settings.mode) settings.mode = (navigator.maxTouchPoints > 0 && /iPad|Macintosh|Android/.test(navigator.userAgent)) ? 'ipad' : 'pc';
 function saveSettings() { try { localStorage.setItem('settings', JSON.stringify(settings)); } catch (e) {} }
 
-// ================= サウンド（BGMとSEを別々の音量で）=================
 let AC = null, bgmG = null, seG = null, bgmTimer = null, bgmMode = '', bgmStep = 0;
 function initAudio() {
   if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
@@ -449,7 +423,6 @@ function setBgm(mode) {
   }, p.iv);
 }
 
-// 設定モーダル
 function refreshSettingsUI() {
   $('setBgm').value = Math.round(settings.bgm * 100); $('vBgm').textContent = Math.round(settings.bgm * 100);
   $('setSe').value = Math.round(settings.se * 100); $('vSe').textContent = Math.round(settings.se * 100);
@@ -466,17 +439,16 @@ $('setBgm').addEventListener('change', (e) => e.target.blur());
 $('modePc').onclick = () => { settings.mode = 'pc'; saveSettings(); refreshSettingsUI(); updateTouchUI(); };
 $('modePad').onclick = () => { settings.mode = 'ipad'; saveSettings(); refreshSettingsUI(); updateTouchUI(); };
 
-function resize() {                                         // iPad等：解像度(DPR)と画面サイズ(4:3縦横)に追従
+function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   VW = innerWidth; VH = innerHeight;
   cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
-  vs = clamp(Math.min(VW, VH) / 720, 0.8, 1.3);              // 画面サイズに応じて見える範囲をそろえる
+  vs = clamp(Math.min(VW, VH) / 720, 0.8, 1.3);
   stageCv.width = Math.round(VW * DPR); stageCv.height = Math.round(VH * DPR);
 }
 addEventListener('resize', resize); addEventListener('orientationchange', resize); resize();
 setScreen('title');
 
-// ================= スタート画面・ロビー =================
 try { $('name').value = localStorage.getItem('pname') || ''; } catch (e) {}
 function nm() { if (profile.name) return profile.name; const v = $('name').value.trim(); try { localStorage.setItem('pname', v); } catch (e) {} return v; }
 $('btnCreate').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('create', { name: nm(), skin: skinSel }); };
@@ -486,7 +458,7 @@ $('code').addEventListener('input', () => { $('code').value = $('code').value.re
 $('code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnJoin').click(); });
 socket.on('errmsg', (m) => { $('err').textContent = m; });
 
-const roleLabel = { auto: 'ランダム', runner: '逃げ側', oni: '鬼側' };
+const roleLabel = { auto: 'おまかせ', runner: '逃げ側', oni: '鬼側' };
 const roleEmoji = { auto: '🎲', runner: '🏃', oni: '👹' };
 socket.on('lobby', (d) => {
   lobbyData = d;
@@ -507,8 +479,8 @@ function renderLobby() {
   $('readyBtn').style.display = host ? 'none' : '';
   $('readyBtn').textContent = me.ready ? '準備解除' : '準備OK ✓';
   $('readyBtn').classList.toggle('active', !!me.ready);
-  $('rulesBtn').style.display = soloLobbyHide() ? 'none' : '';
-  $('rulesBtn').textContent = host ? '⚙ ルール設定' : 'ルール確認';
+  $('rulesBtn').style.display = 'none';
+  $('rulesBtn').textContent = host ? '⚙ ルール設定' : '📋 ルール確認';
   $('lnote').textContent = d.state === 'playing' ? '試合中です。終了までお待ちください。'
     : host ? '準備OK ' + ready + ' / ' + total + ' 鬼を選んだ人がいなければCPUの鬼が参加します。'
     : me.ready ? 'ホストの開始を待っています…' : '準備ができたら「準備OK」を押してください';
@@ -538,7 +510,6 @@ function hideGameUI() {
   mapOpen = false; fm.style.display = 'none';
 }
 
-// ================= ゲーム開始・終了 =================
 socket.on('init', (w) => {
   world = w; cfg = w.cfg; myRole = w.role; myName = w.name; mySkin = w.skin || 0; soloMode = !!w.solo;
   TH = (2 - w.side) * Math.PI / 2;
@@ -550,7 +521,7 @@ socket.on('init', (w) => {
   mini.style.display = 'block'; hud.style.display = 'block';
   setScreen('game'); setBgm('game'); updateTouchUI();
   $('backBtn').textContent = soloMode ? 'タイトルに戻る ▶' : 'ロビーに戻る ▶';
-  toast(myRole === 'runner' ? '逃げ側：消しゴムを争奪し、エレベーターから脱出せよ [M]で全体マップ' : '鬼側：消しゴムを好きな場所に設置しよう！ [M]で全体マップ');
+  toast(myRole === 'runner' ? '逃げ側：消しゴムを探し、自分のエレベーター(画面下)から脱出せよ！ [M]で全体マップ' : '鬼側：消しゴムを好きな場所に設置しよう！ [M]で全体マップ');
 });
 socket.on('ev', (m) => toast(m));
 function toast(m) {
@@ -568,7 +539,7 @@ socket.on('state', (s) => {
     $('resTitle').textContent = iWin ? '勝利！' : '敗北…';
     $('resTitle').style.color = iWin ? '#4ade80' : '#f87171';
     $('resMsg').textContent = s.s === 'runwin' ? (s.slide < 250 ? '鬼が目の前まで迫る中、ギリギリで扉が閉まった！' : '消しゴムを持ってエレベーターで脱出成功！')
-      : s.s === 'oniwin' ? '逃げ側が全滅' : 'タイムアップ！逃げ切れなかった';
+      : s.s === 'oniwin' ? '逃げ側は全員やられた。' : '時間切れ。逃げ切れなかった。';
     show('result', true); mapOpen = false; fm.style.display = 'none';
   }
 });
@@ -576,8 +547,8 @@ socket.on('fx', (f) => {
   fxs.push({ t: f.t, x: f.x, y: f.y, t0: performance.now() });
   if (f.t === 'stun') { beep(200, 0.35, 0.12, 'sawtooth'); beep(1500, 0.1, 0.06); } else if (f.t === 'hit') beep(120, 0.25, 0.16, 'sawtooth'); else beep(660, 0.18, 0.05, 'sine');
 });
-// ================= スタンプ・定型文チャット =================
-const CHATS = ['👍', '😂', '😱', '🙏', '🔥', '❤️', '👀', '💤', 'こっちに逃げて！', '鬼がいる！', '消しゴム発見！', '助けて！', 'ありがとう！', 'ナイス！', '待って！', '急げ！'];
+
+const CHATS = ['👍', '😂', '😱', '🙏', '🔥', '❤️', '👀', '💤', 'こっちに逃げて！', '鬼が来る！', '消しゴム発見！', '助けて！', 'ありがとう！', 'ナイス！', '待って！', '急げ！'];
 const bubbles = {};
 function buildChat() {
   const pal = $('chatPal'); pal.innerHTML = '';
@@ -596,58 +567,9 @@ $('chatBtn').onclick = () => { initAudio(); toggleChat(); };
 socket.on('chat', (m) => { bubbles[m.id] = { i: m.i, t0: performance.now() }; });
 buildChat();
 
-// ================= ホストのカスタム設定（ルール）=================
-const RULE_DEF = [
-  { k: 'matchTime', lab: '試合時間', min: 120, max: 600, st: 30, u: '秒' },
-  { k: 'placeTime', lab: '設置時間', min: 10, max: 60, st: 5, u: '秒' },
-  { k: 'runnerSpeed', lab: '逃げ側の速度', min: 70, max: 150, st: 5, u: '%' },
-  { k: 'oniSpeed', lab: '鬼の速度', min: 70, max: 150, st: 5, u: '%' }
-];
-const RULE_TG = [{ k: 'items', lab: '🎁 アイテム・宝箱' }, { k: 'potions', lab: '🧪 回復薬' }, { k: 'warps', lab: '🌀 ワープ地点' }, { k: 'crouch', lab: '🫥 しゃがみ' }];
-const RULE_DEFAULT = { matchTime: 300, placeTime: 30, runnerSpeed: 100, oniSpeed: 100, items: true, potions: true, warps: true, crouch: true };
-let rulesDraft = null;
-function soloLobbyHide() { return false; }
-function buildRules() {
-  const host = !!(lobbyData && lobbyData.host === lobbyData.you), box = $('rulesBody'); box.innerHTML = '';
-  $('rulesNote').textContent = host ? 'ホストだけが変更できます。変更後に「この設定にする」を押してください。' : 'ホストが設定したルールです（確認のみ）。';
-  $('rulesApply').style.display = host ? '' : 'none'; $('rulesReset').style.display = host ? '' : 'none';
-  for (const d of RULE_DEF) {
-    const row = document.createElement('div'); row.className = 'row';
-    const lab = document.createElement('span'); lab.style.width = '110px'; lab.textContent = d.lab;
-    const inp = document.createElement('input'); inp.type = 'range'; inp.min = d.min; inp.max = d.max; inp.step = d.st; inp.value = rulesDraft[d.k]; inp.disabled = !host;
-    const val = document.createElement('span'); val.className = 'val'; val.style.width = '70px'; val.textContent = rulesDraft[d.k] + d.u;
-    inp.addEventListener('input', () => { rulesDraft[d.k] = Number(inp.value); val.textContent = inp.value + d.u; });
-    row.append(lab, inp, val); box.appendChild(row);
-  }
-  const tg = document.createElement('div'); tg.className = 'tgrow';
-  for (const d of RULE_TG) {
-    const b = document.createElement('button'); b.className = 'btn gray' + (rulesDraft[d.k] ? ' active' : ''); b.textContent = d.lab + '：' + (rulesDraft[d.k] ? 'ON' : 'OFF'); b.disabled = !host;
-    b.onclick = () => { rulesDraft[d.k] = !rulesDraft[d.k]; buildRules(); };
-    tg.appendChild(b);
-  }
-  box.appendChild(tg);
-}
-$('rulesBtn').onclick = () => { if (!lobbyData) return; rulesDraft = Object.assign({}, RULE_DEFAULT, lobbyData.rules); buildRules(); show('rules', true); };
-$('rulesApply').onclick = () => { socket.emit('setRules', rulesDraft); show('rules', false); toast('⚙ ルールを更新した'); };
-$('rulesReset').onclick = () => { rulesDraft = Object.assign({}, RULE_DEFAULT); buildRules(); };
-$('rulesClose').onclick = () => show('rules', false);
-
-function leaveResult() { inGame = false; resultShown = false; show('result', false); hideGameUI(); if (lobbyData) { show('lobby', true); setScreen('lobby'); setBgm('lobby'); renderLobby(); } }
-function goTitle() { inGame = false; resultShown = false; lobbyData = null; show('result', false); hideGameUI(); show('lobby', false); show('title', true); setScreen('title'); setBgm('lobby'); }
-$('backBtn').onclick = () => {
-  if (soloMode) { socket.emit('leave'); goTitle(); }          // CPU戦：ロビーを挟まずタイトルへ
-  else { socket.emit('backToLobby'); leaveResult(); }
-};
-const doAction = () => socket.emit('action');
-const doItem = () => socket.emit('useItem');
-const doCrouch = () => socket.emit('crouch');
-$('placeBtn').onclick = doAction;
-$('itemBtn').onclick = doItem;
-
-// ================= 入力（PC：キーボード／iPad：バーチャルパッド）=================
 const keys = { u: 0, d: 0, l: 0, r: 0 };
 const kmap = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
-function sendInput() {                                    // 画面基準の入力 → ワールド基準へ回転して送信
+function sendInput() {
   const sx = keys.r - keys.l, sy = keys.d - keys.u;
   const c = Math.round(Math.cos(TH)), s = Math.round(Math.sin(TH));
   const wx = sx * c + sy * s, wy = -sx * s + sy * c;
@@ -681,7 +603,6 @@ function updateTouchUI() {
   document.body.classList.toggle('ipad', settings.mode === 'ipad');
   if (!on) { for (const k in keys) keys[k] = 0; }
 }
-// バーチャルDパッド（アナログ）
 const dpad = $('dpad'), knob = $('knob');
 let dpId = null;
 function setKeysVec(l, r, u, d) {
@@ -710,7 +631,6 @@ function bindTouchBtn(id, fn) {
 bindTouchBtn('tbSpace', doAction); bindTouchBtn('tbQ', doItem); bindTouchBtn('tbMap', toggleMap); bindTouchBtn('tbCrouch', doCrouch);
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// ================= 迷路の事前描画 =================
 function buildMaze() {
   const { grid, T, N, map: M } = world;
   mazeCanvas = document.createElement('canvas'); mazeCanvas.width = M; mazeCanvas.height = M;
@@ -724,9 +644,8 @@ function buildMaze() {
   }
 }
 
-// ================= 描画ヘルパ =================
 function smooth(cur, tgt, k) { cur.x += (tgt.x - cur.x) * k; cur.y += (tgt.y - cur.y) * k; }
-function motion(v, tgt, k, dt) {                          // 補間＋歩行アニメ用の移動量
+function motion(v, tgt, k, dt) {
   const ox = v.x, oy = v.y;
   v.x += (tgt.x - v.x) * k; v.y += (tgt.y - v.y) * k;
   const mx = v.x - ox, my = v.y - oy, sp = Math.hypot(mx, my) / Math.max(dt, 0.001);
@@ -748,7 +667,6 @@ function w2s(x, y) {
 function rr(c, x, y, w, h, r) {
   c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
-// MONO消しゴム：青・白・黒の3色ストライプのスリーブ
 function drawMono(c, sc) {
   c.save(); c.scale(sc, sc);
   c.fillStyle = '#f8fafc'; rr(c, -19, -9, 38, 18, 3); c.fill();
@@ -834,7 +752,6 @@ function drawPotions(now) {
   });
 }
 
-// ---------- 人型キャラクター（頭・胴体・手足）----------
 function limb(x0, y0, x1, y1, w, col) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
 function drawHuman(e, v, alpha, isMe, now) {
   const isOni = e.role === 'oni', sk = SKINS[e.sk || 0];
@@ -846,7 +763,6 @@ function drawHuman(e, v, alpha, isMe, now) {
     ctx.restore(); return;
   }
   if (e.inv && Math.floor(now / 100) % 2) ctx.globalAlpha *= 0.4;
-  // 足元（影・自分の印・クールタイム）
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0, 12, 13, 5, 0, 0, 7); ctx.fill();
   if (isMe) { ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 12, 16, 6.5, 0, 0, 7); ctx.stroke(); }
   if (isMe && e.wcd > 0) { ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 12, 20, 8, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, e.wcd / world.warpCd)); ctx.stroke(); }
@@ -856,24 +772,19 @@ function drawHuman(e, v, alpha, isMe, now) {
   const skin = isOni ? (e.st ? '#9ca3af' : '#f87171') : '#f5cfa8';
   const shirt = isOni ? (e.st ? '#6b7280' : sk.o) : sk.c;
   ctx.save(); ctx.scale(fx, e.cr ? 0.78 : 1); ctx.translate(0, -bob + (e.cr ? 4 : 0));
-  // 脚
   const pants = isOni ? '#facc15' : '#334155';
   limb(-4, 1, -4 + sw * 6, 12, 5, pants); limb(4, 1, 4 - sw * 6, 12, 5, pants);
   ctx.fillStyle = '#111827'; ctx.beginPath(); ctx.arc(-4 + sw * 6, 12.5, 3, 0, 7); ctx.arc(4 - sw * 6, 12.5, 3, 0, 7); ctx.fill();
-  // 奥の腕
   limb(-8, -14, -8 - sw * 5, -3, 4, skin);
-  // 胴体
   ctx.fillStyle = shirt; rr(ctx, -8.5, -17, 17, 19, 4); ctx.fill();
   ctx.strokeStyle = isOni ? '#111' : sk.r; ctx.lineWidth = 1.6; ctx.stroke();
-  if (isOni) {                                       // 虎柄パンツ
+  if (isOni) {
     ctx.fillStyle = '#facc15'; ctx.fillRect(-8.5, -1, 17, 5);
     ctx.strokeStyle = '#111'; ctx.lineWidth = 1.4;
     for (let i = -6; i <= 6; i += 4) { ctx.beginPath(); ctx.moveTo(i, -1); ctx.lineTo(i + 2, 4); ctx.stroke(); }
   }
-  // 手前の腕（鬼は金棒）
   limb(8, -14, 8 + sw * 5, -3, 4, skin);
   if (isOni) { limb(8 + sw * 5, -3, 13 + sw * 5, -22, 3.5, '#92400e'); ctx.fillStyle = '#3f3f46'; ctx.beginPath(); ctx.arc(13 + sw * 5, -24, 5, 0, 7); ctx.fill(); }
-  // 頭
   ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, -25, 9, 0, 7); ctx.fill();
   if (isOni) {
     ctx.fillStyle = '#1f0a0a'; ctx.beginPath(); ctx.arc(0, -27, 9.5, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
@@ -889,10 +800,8 @@ function drawHuman(e, v, alpha, isMe, now) {
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-2, -24.5, 1.4, 0, 7); ctx.arc(4, -24.5, 1.4, 0, 7); ctx.fill();
   }
   ctx.restore();
-  // 胸のマーク（左右反転させない）
   if (!isOni && sk.m) { ctx.fillStyle = sk.r; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(sk.m, 0, -8 - bob); }
   if (isOni && e.st) { ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('💫', 0, -46 + Math.sin(now / 150) * 2); }
-  // 頭上：消しゴム所持・HPバー（逃げ側）
   if (!isOni) {
     if (e.e) { ctx.save(); ctx.translate(0, -48 - bob); drawMono(ctx, 0.8); ctx.restore(); }
     const hp = e.hp === undefined ? 100 : e.hp;
@@ -903,7 +812,7 @@ function drawHuman(e, v, alpha, isMe, now) {
   }
   ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   if (!e.noLabel) ctx.fillText(e.n || '', 0, 28);
-  const bb = e.noLabel ? null : bubbles[e.id];                // スタンプ・定型文のフキダシ
+  const bb = e.noLabel ? null : bubbles[e.id];
   if (bb && performance.now() - bb.t0 < 3000) {
     const txt = CHATS[bb.i];
     ctx.globalAlpha = 1; ctx.save(); ctx.translate(0, -(e.e ? 80 : 68));
@@ -920,7 +829,6 @@ function drawHuman(e, v, alpha, isMe, now) {
   }
   ctx.restore();
 }
-// 暗がりの影：人型のシルエットだけがうっすら見える（鬼は目が赤く光る）
 function drawSil(e, v, a, now) {
   const isOni = e.role === 'oni';
   ctx.save(); ctx.translate(v.x, v.y); ctx.rotate(-TH);
@@ -938,7 +846,6 @@ function drawSil(e, v, a, now) {
   ctx.restore();
 }
 
-// 画面端の方向インジケーター（画面内ならfalse）
 function edgeArrow(wx, wy, color, stroke, label, now) {
   const p = w2s(wx, wy), W = VW, H = VH, m = 56;
   if (p.x > m && p.x < W - m && p.y > m && p.y < H - m) return false;
@@ -956,13 +863,11 @@ function edgeArrow(wx, wy, color, stroke, label, now) {
   return true;
 }
 
-// ================= エレベーター内の専用クローズアップ演出（実マップは映さない）=================
 function drawCinematic(now) {
   const W = VW, H = VH, el = state.el;
   if (!bdStart) bdStart = Math.max(0.5, el.door);
   const closure = clamp(1 - el.door / bdStart, 0, 1);
   const bd = state.bd || { left: 0, total: 1 };
-  // 鬼の接近度だけを演出に使う（位置・マップは映さない）
   let nd = 9999, lat = 0;
   for (const e of state.ents) if (e.role === 'oni') {
     const d = Math.hypot(e.x - camV.x, e.y - camV.y);
@@ -971,32 +876,29 @@ function drawCinematic(now) {
   const prox = nd < 650 ? clamp(1 - nd / 650, 0, 1) : 0, danger = nd < 520 ? clamp((520 - nd) / 400, 0, 1) : 0;
   const sh = 1.2 + closure * 1.6 + danger * 6;
   ctx.save(); ctx.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
-  // エレベーター内部：暗い壁
   const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#16110c'); bg.addColorStop(1, '#050403');
   ctx.fillStyle = bg; ctx.fillRect(-20, -20, W + 40, H + 40);
   const Wd = Math.min(W * 0.58, 700), Hd = Math.min(H * 0.72, 520), cx = W / 2, x0 = cx - Wd / 2, y0 = H * 0.5 - Hd / 2 + 18;
-  const flick = Math.random() > 0.93 ? 0.25 : 0.7 + 0.2 * Math.sin(now / 110);           // 切れかけの蛍光灯
+  const flick = Math.random() > 0.93 ? 0.25 : 0.7 + 0.2 * Math.sin(now / 110);
   const lamp = ctx.createRadialGradient(cx, 0, 10, cx, 0, H * 0.8); lamp.addColorStop(0, 'rgba(210,190,120,' + (0.22 * flick) + ')'); lamp.addColorStop(1, 'rgba(210,190,120,0)');
   ctx.fillStyle = lamp; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = 'rgba(0,0,0,.4)'; for (let i = 1; i < 6; i++) { ctx.fillRect(x0 * i / 6 - 2, y0, 3, Hd); ctx.fillRect(x0 + Wd + (W - x0 - Wd) * i / 6, y0, 3, Hd); }
-  // 扉の向こう：真っ暗な闇と不気味な気配
   ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, Wd, Hd); ctx.clip();
   const dk = ctx.createLinearGradient(0, y0, 0, y0 + Hd); dk.addColorStop(0, '#000'); dk.addColorStop(1, '#0d0508');
   ctx.fillStyle = dk; ctx.fillRect(x0, y0, Wd, Hd);
   const vx = cx, vy = y0 + Hd * 0.46;
-  ctx.strokeStyle = 'rgba(120,20,20,.16)'; ctx.lineWidth = 1.5;                         // かすかな廊下の消失線
+  ctx.strokeStyle = 'rgba(120,20,20,.16)'; ctx.lineWidth = 1.5;
   for (let i = -5; i <= 5; i++) { ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(vx + i * Wd * 0.22, y0 + Hd * (i % 2 ? 1.1 : 1.0)); ctx.stroke(); }
   for (let i = 0; i < 6; i++) { const t = ((i + (now / 1600) % 1) / 6), yy = vy + (y0 + Hd - vy) * t * t; ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + Wd, yy); ctx.stroke(); }
-  const em = ctx.createRadialGradient(vx, y0 + 6, 4, vx, y0 + 6, Hd * 0.7);              // 赤い非常灯
+  const em = ctx.createRadialGradient(vx, y0 + 6, 4, vx, y0 + 6, Hd * 0.7);
   const pulse = 0.5 + 0.5 * Math.sin(now / (danger > 0 ? 120 : 380));
   em.addColorStop(0, 'rgba(255,40,40,' + (0.18 + 0.22 * pulse + 0.2 * danger) + ')'); em.addColorStop(1, 'rgba(255,40,40,0)');
   ctx.fillStyle = em; ctx.fillRect(x0, y0, Wd, Hd);
-  for (let i = 0; i < 5; i++) {                                                           // 漂う霧
+  for (let i = 0; i < 5; i++) {
     const fx2 = vx + Math.sin(now / 2300 + i * 1.7) * Wd * 0.3, fy2 = vy + Math.cos(now / 2900 + i) * Hd * 0.18 + i * 14 - 20;
     const fg = ctx.createRadialGradient(fx2, fy2, 4, fx2, fy2, Wd * 0.32);
     fg.addColorStop(0, 'rgba(90,80,90,0.16)'); fg.addColorStop(1, 'rgba(90,80,90,0)'); ctx.fillStyle = fg; ctx.fillRect(x0, y0, Wd, Hd);
   }
-  // 鬼の気配：赤い目が闇の奥から近づいてくる（近いほど大きく・低く・速く瞬く）
   if (prox > 0) {
     const ex = vx + clamp(lat / 320, -1, 1) * Wd * 0.28 * (1 - prox * 0.5), ey = vy + Hd * (0.02 + 0.3 * prox * prox);
     const er = 2 + prox * 17, sep = 7 + prox * 52, bl = (Math.sin(now / (200 - prox * 120)) > -0.85) ? 1 : 0.15;
@@ -1013,13 +915,11 @@ function drawCinematic(now) {
   ctx.fillStyle = fog; ctx.fillRect(x0, y0, Wd, Hd);
   if (danger > 0) { ctx.fillStyle = 'rgba(255,0,0,' + (0.1 * danger * (0.6 + 0.4 * Math.sin(now / 70))) + ')'; ctx.fillRect(x0, y0, Wd, Hd); }
   ctx.restore();
-  // 閉まっていく扉
   const pw = (Wd / 2) * closure;
   if (pw > 0.5) { metalPanel(x0, y0, pw, Hd); metalPanel(x0 + Wd - pw, y0, pw, Hd); }
   if (closure < 0.995) { const a1 = x0 + pw, a2 = x0 + Wd - pw; ctx.fillStyle = 'rgba(255,60,60,' + (0.45 + 0.45 * Math.sin(now / 90)) + ')'; ctx.fillRect(a1 - 3, y0, 3, Hd); ctx.fillRect(a2, y0, 3, Hd); }
   ctx.strokeStyle = '#0b0f19'; ctx.lineWidth = 14; ctx.strokeRect(x0 - 7, y0 - 7, Wd + 14, Hd + 14);
   ctx.strokeStyle = '#4b5563'; ctx.lineWidth = 3; ctx.strokeRect(x0 - 1, y0 - 1, Wd + 2, Hd + 2);
-  // 表示パネル
   ctx.textAlign = 'center';
   ctx.fillStyle = '#0b0b0b'; rr(ctx, cx - 150, y0 - 66, 300, 46, 8); ctx.fill();
   ctx.fillStyle = (Math.floor(now / 200) % 2) ? '#fb923c' : '#ef4444'; ctx.font = 'bold 28px sans-serif';
@@ -1036,7 +936,6 @@ function drawCinematic(now) {
   }
 }
 
-// ================= 全体マップ（Mキー）=================
 function drawFull(now) {
   const S = fm.width, M = world.map, sc = S / M, T = world.T, el = state.el;
   fctx.clearRect(0, 0, S, S); fctx.fillStyle = '#080614'; fctx.fillRect(0, 0, S, S);
@@ -1066,7 +965,6 @@ function drawFull(now) {
     fctx.fillStyle = 'rgba(255,40,40,.28)'; fctx.beginPath(); fctx.arc(d.x * sc, d.y * sc, 18, 0, 7); fctx.fill();
     fctx.fillStyle = '#ff3b3b'; fctx.beginPath(); fctx.arc(d.x * sc, d.y * sc, 8, 0, 7); fctx.fill(); fctx.strokeStyle = '#fff'; fctx.lineWidth = 2; fctx.stroke();
   }
-  // 自分の現在地（リアルタイム）
   if (state.me.al || myRole === 'oni') {
     const px = meV.x * sc, py = meV.y * sc, pr = (now % 1000) / 1000;
     fctx.strokeStyle = 'rgba(255,255,255,' + (1 - pr) + ')'; fctx.lineWidth = 3; fctx.beginPath(); fctx.arc(px, py, 10 + pr * 22, 0, 7); fctx.stroke();
@@ -1082,32 +980,31 @@ function drawFull(now) {
   fctx.fillStyle = '#fff'; fctx.font = 'bold 16px sans-serif'; fctx.textAlign = 'left'; fctx.fillText('全体マップ  [M] または クリックで閉じる', 12, 24);
 }
 
-// ================= ロビーのステージ（全員のアバターを並べて表示）=================
 const ROLE_ICON = { runner: '🏃', oni: '👹', auto: '🎲' };
 function drawStageChar(p, x, y, s, now, isMe, i, host, cx) {
   const c = sctx;
-  c.save(); c.translate(x, y + 12 * s);                                        // 足元の台座
+  c.save(); c.translate(x, y + 12 * s);
   c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(0, 3, 26 * s, 7.5 * s, 0, 0, 7); c.fill();
   c.strokeStyle = isMe ? '#ffd23f' : 'rgba(255,255,255,.55)'; c.lineWidth = isMe ? 3 : 2; c.beginPath(); c.ellipse(0, 0, 23 * s, 6.8 * s, 0, 0, 7); c.stroke();
   c.restore();
-  const ctx0 = ctx, th0 = TH; ctx = c; TH = 0;                                 // 既存の人型描画を再利用
+  const ctx0 = ctx, th0 = TH; ctx = c; TH = 0;
   c.save(); c.translate(x, y); c.scale(s, s);
   drawHuman({ role: p.role === 'oni' ? 'oni' : 'runner', al: true, sk: p.skin, hp: 100, noLabel: true }, { x: 0, y: 0, fx: x < cx ? 1 : -1, mv: 0, ph: 0 }, 1, false, now + i * 260);
   c.restore(); ctx = ctx0; TH = th0;
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  const fs = clamp(Math.round(s * 5.6), 12, 22);                               // 頭上：名前（ホストは末尾に👑）
+  const fs = clamp(Math.round(s * 5.6), 12, 22);
   c.font = 'bold ' + fs + 'px sans-serif';
   const label = p.name + (host ? ' 👑' : '');
   const w = c.measureText(label).width + 20, ny = y - 52 * s;
   c.fillStyle = isMe ? 'rgba(255,210,63,.95)' : 'rgba(12,8,38,.78)'; rr(c, x - w / 2, ny - fs * 0.85, w, fs * 1.7, 9); c.fill();
   c.fillStyle = isMe ? '#3a2a00' : '#fff'; c.fillText(label, x, ny + 1);
-  const rd = p.ready;                                                          // 足元：ロールアイコン＋準備状況
+  const rd = p.ready;
   const st = ROLE_ICON[p.role] + ' ' + (host ? 'ホスト' : rd ? '準備OK' : '準備中');
   c.font = 'bold ' + Math.max(12, fs - 2) + 'px sans-serif';
   const w2 = c.measureText(st).width + 18, fy = y + 12 * s + 26 + (fs - 12);
   c.fillStyle = rd ? 'rgba(34,197,94,.9)' : 'rgba(71,85,105,.85)'; rr(c, x - w2 / 2, fy - fs * 0.8, w2, fs * 1.6, 9); c.fill();
   c.fillStyle = '#fff'; c.fillText(st, x, fy + 1);
-  const bb = bubbles[p.id];                                                    // スタンプ・定型文
+  const bb = bubbles[p.id];
   if (bb && performance.now() - bb.t0 < 3000) {
     const txt = CHATS[bb.i], by = ny - fs * 2.2;
     if (bb.i < 8) { c.font = Math.round(fs * 2.2) + 'px sans-serif'; c.fillText(txt, x, by); }
@@ -1126,7 +1023,7 @@ function drawStage(now) {
   const ps = d.players, n = ps.length, two = n > 4, per = two ? Math.ceil(n / 2) : n;
   const sc = clamp(Math.min(VH * (two ? 0.2 : 0.3) / 52, VW / (per + 0.9) / 46), 1.2, 4.2);
   const cx = VW / 2, floorY = VH * (two ? 0.70 : 0.72);
-  const fg = c.createRadialGradient(cx, floorY, 10, cx, floorY, VW * 0.45);       // 円形のステージ床
+  const fg = c.createRadialGradient(cx, floorY, 10, cx, floorY, VW * 0.45);
   fg.addColorStop(0, 'rgba(255,255,255,.26)'); fg.addColorStop(1, 'rgba(255,255,255,0)');
   c.fillStyle = fg; c.beginPath(); c.ellipse(cx, floorY, VW * 0.45, VH * (two ? 0.2 : 0.13), 0, 0, 7); c.fill();
   ps.forEach((p, i) => {
@@ -1138,7 +1035,6 @@ function drawStage(now) {
   });
 }
 
-// ================= メインループ =================
 let lastT = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
@@ -1155,14 +1051,13 @@ function frame(now) {
   const seen = {};
   for (const e of state.ents) { seen[e.id] = 1; if (!views[e.id]) views[e.id] = { x: e.x, y: e.y, ph: 0, fx: 1, mv: 0 }; motion(views[e.id], e, k, dt); }
   for (const id in views) if (!seen[id]) delete views[id];
-  const oa = state.oa || [];                                   // 鬼のおおよその位置（逃げ側のミニマップ用）
+  const oa = state.oa || [];
   while (oniDots.length < oa.length) oniDots.push({ x: oa[oniDots.length].x, y: oa[oniDots.length].y });
   oniDots.length = oa.length;
   for (let i = 0; i < oa.length; i++) smooth(oniDots[i], oa[i], 1 - Math.exp(-dt * 5));
 
   const el = state.el, T = world.T, Z = ZOOM(), lightR = cfg.lightR[myRole], ghostR = cfg.ghostR[myRole];
 
-  // 効果音・BGM
   if (el.open && !prevOpen) beep(880, 0.25, 0.08, 'sine');
   if (!el.open && prevOpen) beep(80, 0.5, 0.2, 'sawtooth');
   prevOpen = el.open;
@@ -1171,7 +1066,6 @@ function frame(now) {
   if (!state.me.board) bdStart = 0;
   setBgm(state.bd ? 'rush' : 'game');
 
-  // エレベーター内の専用演出
   if (state.me.board) { mini.style.display = 'none'; SX = 0; SY = 0; drawCinematic(now); updateHud(); return; }
   mini.style.display = 'block';
 
@@ -1179,12 +1073,11 @@ function frame(now) {
   const sh = danger * (state.me.e ? 4 : 1.5);
   SX = sh ? (Math.random() - 0.5) * sh * 2 : 0; SY = sh ? (Math.random() - 0.5) * sh * 2 : 0;
 
-  // パス1：ワールド
   withWorld(() => {
     ctx.drawImage(mazeCanvas, 0, 0);
     drawPads(now); drawChests(now); drawPotions(now);
     for (let i = 0; i < 4; i++) { const owned = i === state.side; drawElevator(i, el, now, owned, myRole === 'oni' || owned); }
-    if (state.er && !state.er.c) {                                // 地面の消しゴム（MONO風）
+    if (state.er && !state.er.c) {
       ctx.save(); ctx.translate(state.er.x, state.er.y); ctx.rotate(-TH);
       ctx.shadowColor = '#93c5fd'; ctx.shadowBlur = 14; drawMono(ctx, 1.15); ctx.restore();
     }
@@ -1197,14 +1090,12 @@ function frame(now) {
     if (state.me.al || myRole === 'oni') drawHuman({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, id: socket.id, cr: state.me.cr > 0, n: myName, sk: mySkin, iv: state.me.iv > 0, wcd: state.me.wcd, bs: state.me.boost, hp: state.me.hp }, meV, 1, true, now);
   });
 
-  // 暗闇・靄（壁には遮られない）
   const cx = VW / 2 + SX, cy = VH / 2 + SY;
   const R = lightR * Z * (1 + Math.sin(now / 400) * 0.015);
   const grd = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R);
   grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(0.6, 'rgba(0,0,0,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0.9)');
   ctx.fillStyle = grd; ctx.fillRect(0, 0, VW, VH);
 
-  // パス2：闇の中の影
   withWorld(() => {
     for (const e of state.ents) {
       if (e.role === myRole) continue;
@@ -1235,7 +1126,6 @@ function frame(now) {
       }
       ctx.restore();
     }
-    // 突入されたエレベーター：鬼にだけピンポイント公開
     if (state.rev) {
       const pr = (now % 500) / 500;
       ctx.save(); ctx.translate(state.rev.x, state.rev.y);
@@ -1245,7 +1135,6 @@ function frame(now) {
     }
   });
 
-  // エレベーターの光
   if (el.open) {
     for (let i = 0; i < 4; i++) {
       if (myRole === 'runner' && i !== state.side) continue;
@@ -1258,7 +1147,6 @@ function frame(now) {
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(0, 0, VW, VH); ctx.restore();
     }
   }
-  // 消しゴム所持中：自分のエレベーターへの矢印（水色）
   if (myRole === 'runner' && state.me.e && state.me.al) {
     const E = world.elevs[state.side], p = w2s(E.tx * T + T / 2, E.ty * T + T / 2);
     const ang = Math.atan2(p.y - cy, p.x - cx), dist = Math.hypot(p.x - cx, p.y - cy);
@@ -1268,12 +1156,10 @@ function frame(now) {
       ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -11); ctx.lineTo(-10, 11); ctx.closePath(); ctx.fill(); ctx.restore();
     }
   }
-  // 消しゴムの誘導インジケーター：画面の端に黄色い三角形（逃げ側・未所持のとき）
   if (myRole === 'runner' && state.me.al && !state.me.e && state.eh && state.ph === 'play') {
     const wd = Math.hypot(state.eh.x - camV.x, state.eh.y - camV.y);
     edgeArrow(state.eh.x, state.eh.y, '#facc15', '#5b4600', '消しゴム 約' + Math.round(wd / T) + 'マス', now);
   }
-  // 鬼側：突入されたエレベーターの方向（赤）
   if (myRole === 'oni' && state.rev) edgeArrow(state.rev.x, state.rev.y, '#ef4444', '#450a0a', '突入エレベーター', now);
   if (danger > 0 && state.me.e) {
     const pulse = 0.5 + 0.5 * Math.sin(now / 80);
@@ -1306,11 +1192,11 @@ function drawMini(now) {
   }
   if (myRole === 'oni' && state.er && !state.er.c && state.er.x != null) { mctx.fillStyle = '#facc15'; mctx.beginPath(); mctx.arc(state.er.x * sc, state.er.y * sc, 4, 0, 7); mctx.fill(); }
   if (state.hint) { mctx.strokeStyle = 'rgba(250,204,21,.9)'; mctx.lineWidth = 2; mctx.setLineDash([4, 3]); mctx.beginPath(); mctx.arc(state.hint.x * sc, state.hint.y * sc, state.hint.r * sc, 0, 7); mctx.stroke(); mctx.setLineDash([]); }
-  for (const e of state.ents) {                                        // 味方のみ（鬼は逃げ側のミニマップに出ない）
+  for (const e of state.ents) {
     if (e.role !== myRole || e.al === false) continue;
     mctx.fillStyle = myRole === 'oni' ? '#f87171' : '#22d3ee'; mctx.beginPath(); mctx.arc(e.x * sc, e.y * sc, 3, 0, 7); mctx.fill();
   }
-  if (myRole === 'runner') for (const d of oniDots) {            // 鬼のおおよその現在地（赤いドット）
+  if (myRole === 'runner') for (const d of oniDots) {
     mctx.fillStyle = 'rgba(255,40,40,.28)'; mctx.beginPath(); mctx.arc(d.x * sc, d.y * sc, 9, 0, 7); mctx.fill();
     mctx.fillStyle = '#ff3b3b'; mctx.beginPath(); mctx.arc(d.x * sc, d.y * sc, 4.2, 0, 7); mctx.fill();
     mctx.strokeStyle = '#fff'; mctx.lineWidth = 1; mctx.stroke();
@@ -1320,7 +1206,7 @@ function drawMini(now) {
     mctx.strokeStyle = '#fff'; mctx.lineWidth = 1; mctx.stroke();
   }
   if (state.ping) { const p = (now % 600) / 600; mctx.strokeStyle = 'rgba(251,191,36,' + (1 - p) + ')'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(state.ping.x * sc, state.ping.y * sc, 4 + p * 12, 0, 7); mctx.stroke(); }
-  if (state.rev) {                                                     // 突入エレベーターをピンポイント表示（鬼のみ）
+  if (state.rev) {
     const p = (now % 500) / 500;
     mctx.strokeStyle = 'rgba(255,60,60,' + (1 - p) + ')'; mctx.lineWidth = 2.5; mctx.beginPath(); mctx.arc(state.rev.x * sc, state.rev.y * sc, 5 + p * 22, 0, 7); mctx.stroke();
     mctx.fillStyle = '#ef4444'; mctx.beginPath(); mctx.arc(state.rev.x * sc, state.rev.y * sc, 5, 0, 7); mctx.fill();
@@ -1352,13 +1238,11 @@ function updateHud() {
   } else if (myRole === 'runner' && !s.me.al && playing) { b.style.display = 'block'; b.style.color = '#fca5a5'; b.textContent = '力尽きた…仲間を観戦中'; }
   else if (myRole === 'oni' && s.me.st && playing) { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = s.me.rs ? 'リスポーン硬直中… SPACE でスポーンへテレポート可' : '硬直中…'; }
 
-  // 行動ヒント
   if (playing && s.ph === 'play' && !s.me.board) {
     const spk = pad ? '「SPACE」ボタン' : '[SPACE]';
-    if (s.me.np >= 0 && !(myRole === 'oni' && s.me.st)) { pr.style.display = 'block'; pr.textContent = s.me.wcd > 0 ? '🌀 ワープ待機 ' + Math.ceil(s.me.wcd) + '秒' : spk + ' でワープ'; }   // ワープ最優先
+    if (s.me.np >= 0 && !(myRole === 'oni' && s.me.st)) { pr.style.display = 'block'; pr.textContent = s.me.wcd > 0 ? '🌀 ワープ待機 ' + Math.ceil(s.me.wcd) + '秒' : spk + ' でワープ'; }
     else if (myRole === 'runner' && s.me.nc) { pr.style.display = 'block'; pr.textContent = spk + ' で宝箱を開ける'; }
   }
-  // 逃げ側：HPバー
   if (myRole === 'runner' && s.me.al && playing) {
     hb.style.display = 'block';
     $('hpLab').textContent = '❤ HP ' + s.me.hp + '%';
@@ -1366,7 +1250,6 @@ function updateHud() {
     $('hpFill').style.background = s.me.hp > 50 ? 'linear-gradient(90deg,#22c55e,#86efac)' : 'linear-gradient(90deg,#ef4444,#fca5a5)';
   } else hb.style.display = 'none';
 
-  // アイテム（PC：ボタン／iPad：Qボタン）
   const it = myRole === 'runner' && s.me.al && s.ph === 'play' && playing ? s.me.item : null;
   if (it && it !== 'stun' && !pad) { ib.style.display = 'block'; ib.textContent = ITEM[it].i + ' ' + ITEM[it].n + '（Q）'; }
   $('tbQ').textContent = it ? ITEM[it].i : 'Q';
@@ -1384,7 +1267,6 @@ function updateHud() {
   if (myRole === 'runner') h += '<br>アイテム：' + (s.me.item ? ITEM[s.me.item].i + ' ' + ITEM[s.me.item].n + (s.me.item === 'stun' ? '（自動）' : '') : 'なし');
   if (myRole === 'oni' && s.ph === 'play') h += '<br>テレポート：' + (s.me.rs || s.me.tp <= 0 ? '<b style="color:#c084fc">SPACEで使用可</b>' : 'あと ' + Math.ceil(s.me.tp) + ' 秒');
   if (s.me.boost > 0) h += '<br><span style="color:#fde047">👟 スピードアップ ' + s.me.boost.toFixed(1) + 's</span>';
-  if (s.me.iv > 0) h += '<br><span style="color:#c4b5fd">👻 透明化 ' + s.me.iv.toFixed(1) + 's</span>';
   if (s.me.wcd > 0) h += '<br><span style="color:#c084fc">🌀 ワープ待機 ' + s.me.wcd.toFixed(1) + 's</span>';
   if (myRole === 'runner' && !(world.rules && world.rules.crouch === false)) {
     h += s.me.cr > 0 ? '<br><span style="color:#a7f3d0">🫥 しゃがみ中（透明）' + s.me.cr.toFixed(1) + 's</span>'
@@ -1393,7 +1275,7 @@ function updateHud() {
   h += '<br><span style="font-size:12px;color:#cbd5e1">[M] 全体マップ</span>';
   hud.innerHTML = h;
 }
-// ================= ハンバーガーメニュー：アカウント / フレンド =================
+
 const setMsg = (id, ok, msg) => { const el = $(id); el.textContent = msg; el.style.color = ok ? '#86efac' : '#fca5a5'; };
 function showTab(t) {
   $('tabAcc').style.display = t === 'acc' ? 'block' : 'none'; $('tabFr').style.display = t === 'fr' ? 'block' : 'none';
@@ -1435,7 +1317,7 @@ function renderFriends() {
     const row = document.createElement('div'); row.className = 'fr-item';
     const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = f.name;
     const st = document.createElement('span'); st.className = 'st';
-    st.textContent = !f.online ? '⚫ オフライン' : f.room ? (f.state === 'playing' ? '🎮 試合中 [' + f.room + ']' : '🟡 ロビー [' + f.room + ']') : '🟢 オンライン';
+    st.textContent = !f.online ? '⚫ オフライン' : f.room ? (f.state === 'playing' ? '試合中 [' + f.room + ']' : 'ロビー [' + f.room + ']') : 'オンライン';
     row.append(nm, st);
     if (f.online && f.room) { const j = document.createElement('button'); j.className = 'btn blue mini'; j.textContent = '参加'; j.onclick = () => { initAudio(); socket.emit('joinFriend', { name: f.name, skin: skinSel }); }; row.appendChild(j); }
     if (f.online && lobbyData && !inGame) { const v = document.createElement('button'); v.className = 'btn yellow mini'; v.textContent = '招待'; v.onclick = () => socket.emit('invite', { name: f.name }); row.appendChild(v); }
@@ -1454,7 +1336,6 @@ socket.on('invite', (m) => {
 applyProfile();
 refreshSettingsUI();
 requestAnimationFrame(frame);
-
 </script>
 </body>
 </html>
