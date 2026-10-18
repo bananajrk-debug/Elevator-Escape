@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>消しゴム奪取＆エレベーター脱出</title>
+<title>消しゴム争奪＆エレベーター脱出</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: "Hiragino Sans", "Meiryo", "Noto Sans JP", sans-serif; color: #fff; user-select: none; }
@@ -258,19 +258,19 @@
 </div>
 <div id="settings" class="overlay">
   <div class="panel">
-    <h2>⚙ 設定</h2>
+    <h2>⚙ </h2>
     <div class="row"><span style="width:84px">BGM音量</span><input type="range" id="setBgm" min="0" max="100"><span class="val" id="vBgm"></span></div>
     <div class="row"><span style="width:84px">SE音量</span><input type="range" id="setSe" min="0" max="100"><span class="val" id="vSe"></span></div>
     <div style="font-weight:800;margin-top:6px">デバイス</div>
     <div class="seg" style="margin:8px 0 18px">
-      <button class="btn gray" id="modePc">🖥 PCモード<br><small>キーボード操作</small></button>
-      <button class="btn gray" id="modePad">📱 iPadモード<br><small>画面上のパッド＋ボタン</small></button>
+      <button class="btn gray" id="modePc">PCモード<br><small>キーボード操作</small></button>
+      <button class="btn gray" id="modePad">📱iPadモード<br><small>画面上のパッド＋ボタン</small></button>
     </div>
     <div style="text-align:center"><button class="btn yellow" id="setClose" style="font-size:20px;padding:12px 36px">閉じる</button></div>
   </div>
 </div>
 <div id="ptimer"><div class="pt-lab" id="ptLab"></div><div class="pt-num" id="ptNum"></div><div class="pt-bar"><div id="ptFill"></div></div></div>
-<button class="btn red" id="placeBtn" style="font-size:22px;padding:16px 34px">📍 ここに消しゴムを設置 (SPACE)</button>
+<button class="btn red" id="placeBtn" style="font-size:22px;padding:16px 34px">ここに消しゴムを設置 (SPACE)</button>
 <button class="btn blue" id="itemBtn"></button>
 <div id="toast"></div>
 
@@ -286,26 +286,26 @@
     <i class="g" style="left:6%;top:56%;animation-delay:-4s"></i>
   </div>
   <div class="tlogo-wrap">
-    <div class="tchip">ASYMMETRIC ESCAPE</div>
-    <div class="tlogo">消しゴム奪取</div>
+    <div class="tchip">Elevator Escape</div>
+    <div class="tlogo">消しゴム争奪</div>
     <div class="tribbon"><span>＆ エレベーター脱出</span></div>
   </div>
   <div class="center">
     <input id="name" class="field" maxlength="12" placeholder="プレイヤー名">
-    <button id="btnCreate" class="btn yellow big tbtn"><span class="ic">🏠</span><span>ルームを作る<small>友達と遊ぶ ─ 5桁のルームコードを発行</small></span></button>
-    <button id="btnSolo" class="btn blue big tbtn"><span class="ic">🤖</span><span>CPUと戦う<small>ひとりで今すぐスタート</small></span></button>
+    <button id="btnCreate" class="btn yellow big tbtn"><span class="ic"></span><span>ルームを作る<small>フレンドとプレイ ─ 5桁のルームコードを発行</small></span></button>
+    <button id="btnSolo" class="btn blue big tbtn"><span class="ic"></span><span>CPUと戦う<small>ひとりで今すぐスタート</small></span></button>
     <div class="joinrow">
       <input id="code" class="field" inputmode="numeric" maxlength="5" placeholder="12345">
       <button id="btnJoin" class="btn gray">コードで参加</button>
     </div>
     <div id="err"></div>
   </div>
-  <div class="tfoot">☰ メニュー（アカウント・フレンド） ／ ⚙ 設定</div>
+  <div class="tfoot">☰ メニュー（アカウント・フレンド） ／ ⚙ </div>
 </div>
 
 <!-- ロビー -->
 <div id="lobby" class="overlay bg">
-  <div class="top-left"><button id="leave" class="btn gray" style="font-size:16px;padding:10px 18px">◀ 退出</button> <button id="rulesBtn" class="btn gray" style="font-size:16px;padding:10px 18px">⚙ ルール設定</button></div>
+  <div class="top-left"><button id="leave" class="btn gray" style="font-size:16px;padding:10px 18px">◀ 退出</button> <button id="rulesBtn" class="btn gray" style="font-size:16px;padding:10px 18px">⚙ </button></div>
   <div id="codePill"><div class="lab">ROOM CODE</div><div class="num" id="codeNum">-----</div></div>
   <div class="stage"><div class="spot"></div><canvas id="stageCv"></canvas></div>
   <div id="skname"></div>
@@ -313,30 +313,30 @@
   <div class="bottom-left">
     <button class="btn gray" data-role="runner">🏃 逃げ側</button>
     <button class="btn gray" data-role="oni">👹 鬼側</button>
-    <button class="btn gray" data-role="auto">🎲 おまかせ</button>
+    <button class="btn gray" data-role="auto">🎲 ランダム</button>
   </div>
   <div id="lnote"></div>
   <button id="start" class="btn yellow">ゲーム開始 ▶</button>
-  <button id="readyBtn" class="btn blue">準備OK ✓</button>
+  <button id="readyBtn" class="btn blue">準備OK</button>
 </div>
 
 <!-- ルームコード拡大 -->
 <div id="codeModal" class="overlay">
   <div class="lab">ROOM CODE</div>
   <div class="big" id="codeBig">12345</div>
-  <div class="sub">友達にこのコードを伝えてね（タップで閉じる）</div>
+  <div class="sub">（タップで閉じる）</div>
   <button class="btn yellow" id="copyBtn">コードをコピー</button>
 </div>
 
 <div id="menu" class="overlay">
   <div class="panel" style="width:min(94vw,540px)">
     <div style="display:flex;justify-content:space-between;align-items:center"><h2>☰ メニュー</h2><button class="btn gray" id="menuClose" style="padding:8px 16px;font-size:16px;margin:0">✕</button></div>
-    <div class="tabs"><button class="btn yellow" id="tabAccBtn">👤 アカウント</button><button class="btn gray" id="tabFrBtn">👥 フレンド</button></div>
+    <div class="tabs"><button class="btn yellow" id="tabAccBtn">アカウント</button><button class="btn gray" id="tabFrBtn">フレンド</button></div>
     <div id="tabAcc">
       <div id="accStatus" class="note2"></div>
       <div class="fl-row"><input id="accName" class="field2" maxlength="12" placeholder="ユーザー名（ID）2〜12文字"><button id="accSave" class="btn yellow mini">登録</button></div>
       <div class="fl-row"><input id="accPass" class="field2" type="password" maxlength="20" placeholder="フレンドパスワード（4〜20文字）"><button id="passEye" class="btn gray mini">👁</button><button id="passSave" class="btn blue mini">設定</button></div>
-      <div class="note2">フレンドパスワードは<b>友達に教えるための秘密のキー</b>です。友達があなたの「ユーザー名」と「このパスワード」を入力すると、お互いにフレンドになれます。</div>
+      <div class="note2">フレンドパスワードは<b>友達に教えるためのキー</b>です。友達があなたの「ユーザー名」と「このパスワード」を入力すると、お互いにフレンドになれます。</div>
       <div class="note2" style="margin-top:14px"><b>ログインキー</b>（別の端末で同じアカウントを使うとき）</div>
       <div class="fl-row"><input id="keyVal" class="field2" readonly placeholder="（ログイン中のみ表示）"><button id="keyShow" class="btn gray mini">表示</button><button id="keyCopy" class="btn gray mini">コピー</button></div>
       <div class="fl-row"><input id="loginKey" class="field2" placeholder="ログインキーを貼り付け"><button id="loginBtn" class="btn blue mini">ログイン</button><button id="logoutBtn" class="btn gray mini">ログアウト</button></div>
@@ -356,7 +356,7 @@
     <div id="rulesNote" style="font-size:13px;color:#cbd5e1;margin-bottom:6px"></div>
     <div id="rulesBody"></div>
     <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
-      <button class="btn gray" id="rulesReset" style="font-size:16px;padding:10px 18px">初期値に戻す</button>
+      <button class="btn gray" id="rulesReset" style="font-size:16px;padding:10px 18px">デフォルトに戻す</button>
       <button class="btn yellow" id="rulesApply" style="font-size:18px;padding:10px 26px">この設定にする</button>
       <button class="btn gray" id="rulesClose" style="font-size:16px;padding:10px 18px">閉じる</button>
     </div>
@@ -486,7 +486,7 @@ $('code').addEventListener('input', () => { $('code').value = $('code').value.re
 $('code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnJoin').click(); });
 socket.on('errmsg', (m) => { $('err').textContent = m; });
 
-const roleLabel = { auto: 'おまかせ', runner: '逃げ側', oni: '鬼側' };
+const roleLabel = { auto: 'ランダム', runner: '逃げ側', oni: '鬼側' };
 const roleEmoji = { auto: '🎲', runner: '🏃', oni: '👹' };
 socket.on('lobby', (d) => {
   lobbyData = d;
@@ -550,7 +550,7 @@ socket.on('init', (w) => {
   mini.style.display = 'block'; hud.style.display = 'block';
   setScreen('game'); setBgm('game'); updateTouchUI();
   $('backBtn').textContent = soloMode ? 'タイトルに戻る ▶' : 'ロビーに戻る ▶';
-  toast(myRole === 'runner' ? '逃げ側：消しゴムを探し、自分のエレベーター(画面下)から脱出せよ！ [M]で全体マップ' : '鬼側：消しゴムを好きな場所に設置しよう！ [M]で全体マップ');
+  toast(myRole === 'runner' ? '逃げ側：消しゴムを争奪し、エレベーターから脱出せよ [M]で全体マップ' : '鬼側：消しゴムを好きな場所に設置しよう！ [M]で全体マップ');
 });
 socket.on('ev', (m) => toast(m));
 function toast(m) {
@@ -568,7 +568,7 @@ socket.on('state', (s) => {
     $('resTitle').textContent = iWin ? '勝利！' : '敗北…';
     $('resTitle').style.color = iWin ? '#4ade80' : '#f87171';
     $('resMsg').textContent = s.s === 'runwin' ? (s.slide < 250 ? '鬼が目の前まで迫る中、ギリギリで扉が閉まった！' : '消しゴムを持ってエレベーターで脱出成功！')
-      : s.s === 'oniwin' ? '逃げ側は全員やられた。' : '時間切れ。逃げ切れなかった。';
+      : s.s === 'oniwin' ? '逃げ側が全滅' : 'タイムアップ！逃げ切れなかった';
     show('result', true); mapOpen = false; fm.style.display = 'none';
   }
 });
@@ -577,7 +577,7 @@ socket.on('fx', (f) => {
   if (f.t === 'stun') { beep(200, 0.35, 0.12, 'sawtooth'); beep(1500, 0.1, 0.06); } else if (f.t === 'hit') beep(120, 0.25, 0.16, 'sawtooth'); else beep(660, 0.18, 0.05, 'sine');
 });
 // ================= スタンプ・定型文チャット =================
-const CHATS = ['👍', '😂', '😱', '🙏', '🔥', '❤️', '👀', '💤', 'こっちに逃げて！', '鬼が来る！', '消しゴム発見！', '助けて！', 'ありがとう！', 'ナイス！', '待って！', '急げ！'];
+const CHATS = ['👍', '😂', '😱', '🙏', '🔥', '❤️', '👀', '💤', 'こっちに逃げて！', '鬼がいる！', '消しゴム発見！', '助けて！', 'ありがとう！', 'ナイス！', '待って！', '急げ！'];
 const bubbles = {};
 function buildChat() {
   const pal = $('chatPal'); pal.innerHTML = '';
