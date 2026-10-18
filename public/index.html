@@ -45,47 +45,41 @@
   .joinrow .btn { font-size: 18px; padding: 0 22px; white-space: nowrap; }
   #err { min-height: 22px; color: #ff9aa2; font-weight: 800; }
 
-  /* ---------- ハンバーガーメニュー & モーダル ---------- */
-  #menuBtn { position: fixed; top: 16px; left: 16px; z-index: 25; width: 48px; height: 48px; font-size: 24px; padding: 0; border-radius: 50%; }
-  #menuModal { background: rgba(5,3,20,.88); align-items: center; justify-content: center; z-index: 40; }
-  .panel { background: #1e1b4b; border: 4px solid #ffd23f; border-radius: 18px; padding: 22px 28px; width: min(92vw, 460px); box-shadow: 0 10px 0 rgba(0,0,0,.4); }
-  .panel h2 { margin: 0 0 10px; font-style: italic; color: #ffd23f; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-  .tab-btn { flex: 1; padding: 8px; background: #3b3780; border: none; border-radius: 8px; color: #fff; font-weight: 900; cursor: pointer; }
-  .tab-btn.active { background: #ffd23f; color: #3a2a00; }
-
-  /* ---------- 人型キャラを直接並べるロビー ---------- */
-  #lobby .top-left { position: absolute; top: 16px; left: 76px; z-index: 2; display: flex; gap: 8px; }
+  /* ---------- ロビー ---------- */
+  #lobby { }
+  #lobby .top-left { position: absolute; top: 16px; left: 16px; z-index: 2; }
   #codePill { position: absolute; top: 14px; right: 16px; z-index: 2; cursor: pointer; background: rgba(10,6,32,.75); border: 3px solid #ffd23f; border-radius: 16px; padding: 6px 18px 8px; text-align: center; box-shadow: 0 5px 0 #c79a00; }
   #codePill:active { transform: translateY(3px); box-shadow: 0 2px 0 #c79a00; }
   #codePill .lab { font-size: 11px; letter-spacing: 3px; color: #ffd23f; font-weight: 800; }
   #codePill .num { font-size: 32px; font-weight: 900; letter-spacing: 6px; font-style: italic; }
-
-  .stage-arena { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; padding: 80px 20px 140px; }
-  .spot-podium { position: absolute; width: 720px; height: 260px; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(255,210,63,.25) 0%, rgba(255,255,255,0) 70%); top: 52%; left: 50%; transform: translate(-50%, -50%); border: 2px dashed rgba(255,210,63,.3); }
-
-  .brawler-card { display: flex; flex-direction: column; align-items: center; position: relative; pointer-events: auto; animation: bob 2.2s ease-in-out infinite; margin: 0 10px; }
-  
-  /* 操作キャラ（アバター）の描画用 Canvas */
-  .char-canvas { width: 120px; height: 150px; filter: drop-shadow(0 12px 10px rgba(0,0,0,0.6)); }
-
-  .brawler-nameplate { margin-top: -10px; padding: 4px 14px; font-size: 16px; font-weight: 900; font-style: italic; background: #ffd23f; color: #3a2a00; border-radius: 8px; box-shadow: 0 4px 0 #c79a00; white-space: nowrap; z-index: 2; }
-  .brawler-rolefoot { margin-top: 6px; font-size: 22px; filter: drop-shadow(0 2px 4px #000); }
-
-  @keyframes bob { 50% { transform: translateY(-10px); } }
-
+  .stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  .spot { position: absolute; width: 520px; height: 520px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.22), rgba(255,255,255,0) 65%); top: 50%; left: 50%; transform: translate(-50%, -58%); }
+  .avatar { position: relative; width: 190px; height: 190px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 96px; background: radial-gradient(circle at 35% 30%, #7db6ff, #2f5fd0); border: 6px solid #fff; box-shadow: 0 14px 0 rgba(0,0,0,.35), 0 0 60px rgba(120,160,255,.6); animation: bob 2.2s ease-in-out infinite; }
+  .avatar.oni { background: radial-gradient(circle at 35% 30%, #ff8d8d, #c21e1e); box-shadow: 0 14px 0 rgba(0,0,0,.35), 0 0 60px rgba(255,90,90,.6); }
+  .avatar.auto { background: radial-gradient(circle at 35% 30%, #d9d9ff, #6b6bd6); }
+  @keyframes bob { 50% { transform: translateY(-12px); } }
+  .nameplate { margin-top: 30px; padding: 8px 28px; font-size: 24px; font-weight: 900; font-style: italic; background: #ffd23f; color: #3a2a00; border-radius: 8px; transform: skewX(-10deg); box-shadow: 0 5px 0 #c79a00; }
+  .rolelabel { margin-top: 12px; font-weight: 800; letter-spacing: 3px; text-shadow: 0 2px 6px #000; }
+  .roster { position: absolute; left: 16px; top: 76px; width: 230px; z-index: 2; display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow: auto; }
+  .card { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-radius: 10px; background: rgba(10,6,32,.7); border-left: 6px solid #64748b; font-weight: 800; }
+  .card.runner { border-color: #2f8cff; } .card.oni { border-color: #ef4444; }
+  .card.me { background: rgba(255,210,63,.22); }
+  .badge { font-size: 12px; padding: 2px 9px; border-radius: 10px; background: #475569; white-space: nowrap; }
+  .badge.runner { background: #2f8cff; } .badge.oni { background: #ef4444; }
   .bottom-left { position: absolute; left: 16px; bottom: 18px; z-index: 2; display: flex; gap: 10px; flex-wrap: wrap; }
   .bottom-left .btn { font-size: 16px; padding: 14px 18px; }
   .bottom-left .btn.active { background: #ffd23f; color: #3a2a00; box-shadow: 0 5px 0 #c79a00; }
   #start { position: absolute; right: 18px; bottom: 18px; z-index: 2; font-size: 32px; padding: 20px 46px; font-style: italic; }
   #lnote { position: absolute; bottom: 92px; right: 22px; z-index: 2; font-size: 13px; color: #d6d0ff; text-align: right; max-width: 320px; }
 
+  /* ---------- コード拡大モーダル ---------- */
   #codeModal { background: rgba(8,4,28,.92); align-items: center; justify-content: center; flex-direction: column; cursor: pointer; z-index: 8; }
   #codeModal .lab { letter-spacing: 8px; color: #ffd23f; font-weight: 900; font-size: clamp(14px, 3vw, 28px); }
   #codeModal .big { font-size: clamp(60px, 22vw, 260px); font-weight: 900; font-style: italic; letter-spacing: .12em; line-height: 1.1; -webkit-text-stroke: 4px #1b0f4d; paint-order: stroke fill; background: linear-gradient(#fff6b0, #ffb703); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 8px 0 #1b0f4d; }
   #codeModal .sub { margin-top: 16px; color: #cfc9f5; }
   #codeModal .btn { margin-top: 20px; font-size: 20px; padding: 14px 34px; }
 
+  /* ---------- 結果 ---------- */
   #result { background: rgba(0,0,0,.82); align-items: center; justify-content: center; flex-direction: column; text-align: center; }
   #result h1 { font-size: 64px; margin: 0 0 8px; font-style: italic; -webkit-text-stroke: 2px #000; }
   #result p { color: #ddd; margin: 6px 0; font-size: 18px; }
@@ -94,18 +88,22 @@
   #ptimer .pt-num { font-size: 68px; font-weight: 900; font-style: italic; line-height: 1.05; color: #ffd23f; -webkit-text-stroke: 2px #3a2a00; paint-order: stroke fill; }
   #ptimer .pt-bar { height: 10px; background: rgba(255,255,255,.2); border-radius: 6px; overflow: hidden; margin-top: 6px; }
   #ptFill { height: 100%; width: 100%; background: linear-gradient(90deg, #ffd23f, #ff7b00); }
+  #ptimer.hot .pt-num { color: #ff4d4d; animation: pulse .5s infinite alternate; }
+  @keyframes pulse { to { transform: scale(1.18); } }
   #itemBtn { position: fixed; right: 18px; bottom: 22px; display: none; z-index: 4; font-size: 20px; padding: 14px 22px; }
   .skins { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 50vw; z-index: 2; }
   .sk { width: 44px; height: 44px; border-radius: 50%; border: 4px solid rgba(255,255,255,.55); cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; font-weight: 900; transition: transform .1s; }
   .sk:hover { transform: scale(1.12); }
   .sk.sel { border-color: #ffd23f; box-shadow: 0 0 0 3px #3a2a00, 0 0 18px #ffd23f; transform: scale(1.18); }
   #skname { position: absolute; bottom: 76px; left: 50%; transform: translateX(-50%); font-weight: 800; font-size: 14px; color: #ffe58a; z-index: 2; }
-
+  /* ===== v5 追加 ===== */
   body { touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   #gear { position: fixed; top: 12px; right: 16px; z-index: 15; width: 48px; height: 48px; font-size: 24px; padding: 0; border-radius: 50%; }
   body.scr-lobby #gear { right: 250px; }
   body.scr-game #gear { right: 182px; }
   #settings { background: rgba(5,3,20,.88); align-items: center; justify-content: center; z-index: 30; }
+  .panel { background: #1e1b4b; border: 4px solid #ffd23f; border-radius: 18px; padding: 22px 28px; width: min(92vw, 460px); box-shadow: 0 10px 0 rgba(0,0,0,.4); }
+  .panel h2 { margin: 0 0 10px; font-style: italic; color: #ffd23f; }
   .row { display: flex; align-items: center; gap: 12px; margin: 14px 0; font-weight: 800; }
   .row input[type=range] { flex: 1; accent-color: #ffd23f; height: 30px; margin: 0; padding: 0; background: none; }
   .row .val { width: 46px; text-align: right; }
@@ -126,7 +124,7 @@
   #tbQ { right: 156px; bottom: 56px; width: 86px; height: 86px; font-size: 20px; }
   #tbMap { right: 30px; bottom: 164px; width: 62px; height: 62px; font-size: 15px; }
   #fullmap { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(86vh, 92vw); height: min(86vh, 92vw); display: none; z-index: 9; border: 4px solid #ffd23f; border-radius: 12px; background: #080614; }
-
+  /* ===== v6：レスポンシブ（iPad 4:3系・縦横どちらでも崩れない）===== */
   :root { --sp: clamp(86px, 18vmin, 140px); --sm: clamp(60px, 12vmin, 96px); --gap: 2vmin; --dp: clamp(120px, 27vmin, 210px); --mini: clamp(104px, 21vmin, 176px);
           --padR: calc(env(safe-area-inset-right, 0px) + 3vmin); --padL: calc(env(safe-area-inset-left, 0px) + 3vmin);
           --padB: calc(env(safe-area-inset-bottom, 0px) + 3.2vmin); --padT: calc(env(safe-area-inset-top, 0px) + 10px); }
@@ -144,6 +142,9 @@
   #toast div { font-size: clamp(13px, 2.2vmin, 16px); }
   #hpbar { bottom: calc(env(safe-area-inset-bottom, 0px) + 2.5vmin); }
   #prompt { bottom: calc(env(safe-area-inset-bottom, 0px) + 9vmin); font-size: clamp(14px, 2.6vmin, 20px); }
+  body.ipad #hpbar { width: min(34vw, 340px); }
+  body.ipad #prompt { bottom: calc(env(safe-area-inset-bottom, 0px) + 12vmin); }
+  body.ipad #toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 16vmin); }
   #dpad { left: var(--padL); bottom: var(--padB); width: var(--dp); height: var(--dp); }
   #knob { width: 40%; height: 40%; margin: -20% 0 0 -20%; }
   .tb { font-size: clamp(14px, 2.8vmin, 22px); }
@@ -154,21 +155,37 @@
   #itemBtn { right: var(--padR); bottom: calc(env(safe-area-inset-bottom, 0px) + 3vmin); }
   #fullmap { width: min(86dvh, 92vw); height: min(86dvh, 92vw); }
   .panel { max-height: 90dvh; overflow: auto; }
-
-  #chatBtn { position: fixed; z-index: 14; display: none; width: clamp(40px, 6.5vmin, 52px); height: clamp(40px, 6.5vmin, 52px); font-size: clamp(18px, 3.2vmin, 24px); padding: 0; border-radius: 50%; left: calc(env(safe-area-inset-left, 0px) + 12px); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); }
+  /* チャット／スタンプ */
+  #chatBtn { position: fixed; z-index: 14; display: none; width: clamp(40px, 6.5vmin, 52px); height: clamp(40px, 6.5vmin, 52px); font-size: clamp(18px, 3.2vmin, 24px); padding: 0; border-radius: 50%;
+             left: calc(env(safe-area-inset-left, 0px) + 12px); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); }
   body.scr-game #chatBtn { display: block; }
   body.scr-lobby #chatBtn { display: block; left: auto; bottom: auto; right: calc(env(safe-area-inset-right, 0px) + 16px); top: 100px; }
-  #chatPal { position: fixed; z-index: 14; display: none; width: min(94vw, 440px); padding: 10px; background: rgba(20,16,60,.94); border: 3px solid #ffd23f; border-radius: 14px; grid-template-columns: repeat(4, 1fr); gap: 8px; left: calc(env(safe-area-inset-left, 0px) + 12px); bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); }
+  body.ipad.scr-game #chatBtn { bottom: calc(var(--padB) + var(--dp) + 2vmin); left: var(--padL); }
+  #chatPal { position: fixed; z-index: 14; display: none; width: min(94vw, 440px); padding: 10px; background: rgba(20,16,60,.94); border: 3px solid #ffd23f; border-radius: 14px; grid-template-columns: repeat(4, 1fr); gap: 8px;
+             left: calc(env(safe-area-inset-left, 0px) + 12px); bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); }
   body.scr-lobby #chatPal { left: auto; bottom: auto; right: calc(env(safe-area-inset-right, 0px) + 16px); top: 156px; }
+  body.ipad.scr-game #chatPal { bottom: calc(var(--padB) + var(--dp) + 2vmin + 56px); left: var(--padL); }
   #chatPal button { font-size: 15px; padding: 10px 4px; border-radius: 10px; border: none; background: #3b3780; color: #fff; font-weight: 800; cursor: pointer; font-family: inherit; touch-action: manipulation; }
   #chatPal button.st { font-size: 26px; padding: 4px; }
   #chatPal button:active { background: #ffd23f; color: #3a2a00; }
   .bub { position: absolute; left: 100%; margin-left: 10px; top: 50%; transform: translateY(-50%); background: #fff; color: #111; padding: 4px 10px; border-radius: 10px; font-weight: 800; white-space: nowrap; font-size: 15px; z-index: 3; }
+  .card { position: relative; }
+  #avBubble { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: #fff; color: #111; padding: 6px 14px; border-radius: 14px; font-weight: 900; font-size: 22px; white-space: nowrap; display: none; z-index: 3; }
+  .avwrap { position: relative; }
+  /* ルール設定 */
   #rules { background: rgba(5,3,20,.88); align-items: center; justify-content: center; z-index: 30; }
   .tgrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
   .tgrow .btn { flex: 1 1 45%; padding: 10px 6px; font-size: 15px; }
   .tgrow .btn.active { background: #22c55e; box-shadow: 0 5px 0 #15803d; }
   .row input[type=range]:disabled { opacity: .5; }
+  /* 縦向き（iPad縦・4:3縦）のロビー調整 */
+  @media (max-aspect-ratio: 1/1) {
+    .roster { top: 84px; width: min(230px, 42vw); max-height: 24dvh; }
+    .skins { bottom: 100px; max-width: 94vw; }
+    #skname { bottom: 160px; }
+    #lnote { bottom: 150px; right: 14px; }
+    #start { font-size: 26px; padding: 16px 30px; }
+  }
 </style>
 </head>
 <body>
@@ -176,10 +193,6 @@
 <canvas id="mini" width="160" height="160"></canvas>
 <div id="hud"></div>
 <div id="banner"></div>
-
-<!-- ハンバーガーメニューボタン -->
-<button id="menuBtn" class="btn gray">☰</button>
-
 <button id="gear" class="btn gray" aria-label="設定">⚙</button>
 <button id="chatBtn" class="btn gray" aria-label="スタンプ">💬</button>
 <div id="chatPal"></div>
@@ -193,40 +206,6 @@
   <div class="tb" id="tbCrouch">しゃがみ</div>
   <div class="tb" id="tbMap">MAP</div>
 </div>
-
-<!-- ハンバーガーメニューモーダル (プロフィール・フレンド機能) -->
-<div id="menuModal" class="overlay">
-  <div class="panel">
-    <h2>📋 メニュー</h2>
-    <div class="tabs">
-      <button class="tab-btn active" id="tabProfileBtn">プロフィール</button>
-      <button class="tab-btn" id="tabFriendsBtn">フレンド</button>
-    </div>
-    
-    <div id="contentProfile">
-      <div class="row"><span>ユーザー名</span></div>
-      <input id="profileNameField" class="field" maxlength="12" placeholder="プレイヤー名">
-      <div class="row" style="margin-top:12px;"><span>フレンド追加パスワード (自由設定)</span></div>
-      <input id="profilePassField" class="field" type="password" maxlength="20" placeholder="友達に教える合言葉">
-      <div style="text-align:center;margin-top:14px"><button class="btn yellow" id="saveProfileBtn">保存する</button></div>
-    </div>
-
-    <div id="contentFriends" style="display:none;">
-      <div style="font-size:14px;color:#cbd5e1;margin-bottom:8px">友達のユーザー名とパスワードを入力して追加！</div>
-      <div class="row"><input id="addFriendNameInput" class="field" placeholder="友達のユーザー名" maxlength="12"></div>
-      <div class="row"><input id="addFriendPassInput" class="field" type="password" placeholder="友達のパスワード" maxlength="20"></div>
-      <button class="btn blue" id="submitAddFriendBtn" style="width:100%;padding:10px;margin-bottom:12px">フレンドを追加する</button>
-      
-      <div style="font-size:14px;color:#ffd23f;margin-top:10px;margin-bottom:4px;font-weight:800;">フレンドリスト</div>
-      <div id="friendListContainer" style="max-height:140px;overflow:auto;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px">
-        <p style="text-align:center;color:#9ca3af;font-size:13px;" id="noFriendsText">登録フレンドはまだいません</p>
-      </div>
-    </div>
-
-    <div style="text-align:center;margin-top:18px"><button class="btn gray" id="menuCloseBtn" style="padding:10px 24px">閉じる</button></div>
-  </div>
-</div>
-
 <div id="settings" class="overlay">
   <div class="panel">
     <h2>⚙ 設定</h2>
@@ -240,7 +219,6 @@
     <div style="text-align:center"><button class="btn yellow" id="setClose" style="font-size:20px;padding:12px 36px">閉じる</button></div>
   </div>
 </div>
-
 <div id="ptimer"><div class="pt-lab" id="ptLab"></div><div class="pt-num" id="ptNum"></div><div class="pt-bar"><div id="ptFill"></div></div></div>
 <button class="btn red" id="placeBtn" style="font-size:22px;padding:16px 34px">📍 ここに消しゴムを設置 (SPACE)</button>
 <button class="btn blue" id="itemBtn"></button>
@@ -261,16 +239,17 @@
   </div>
 </div>
 
-<!-- ブロスタ・フォートナイト風ロビー -->
+<!-- ロビー -->
 <div id="lobby" class="overlay bg">
   <div class="top-left"><button id="leave" class="btn gray" style="font-size:16px;padding:10px 18px">◀ 退出</button> <button id="rulesBtn" class="btn gray" style="font-size:16px;padding:10px 18px">⚙ ルール設定</button></div>
   <div id="codePill"><div class="lab">ROOM CODE</div><div class="num" id="codeNum">-----</div></div>
-  
-  <div class="stage-arena">
-    <div class="spot-podium"></div>
-    <div id="brawlersArena" style="display:flex;gap:40px;justify-content:center;align-items:center;flex-wrap:wrap;z-index:2;position:relative;"></div>
+  <div class="roster" id="roster"></div>
+  <div class="stage">
+    <div class="spot"></div>
+    <div class="avwrap"><div id="avBubble"></div><div class="avatar" id="avatar">🏃</div></div>
+    <div class="nameplate" id="myname">PLAYER</div>
+    <div class="rolelabel" id="myrole"></div>
   </div>
-
   <div id="skname"></div>
   <div class="skins" id="skins"></div>
   <div class="bottom-left">
@@ -341,80 +320,13 @@ const SKINS = [
 const ITEM = { stun: { i: '💫', n: 'スタングレネード' }, boots: { i: '👟', n: 'スピードブーツ' }, invis: { i: '👻', n: '透明化' } };
 const PADCOL = ['#c084fc', '#2dd4bf'];
 
-// ハンバーガーメニュー制御
-let myFriendsList = [];
-$('menuBtn').onclick = () => {
-  $('profileNameField').value = $('name').value;
-  try { $('profilePassField').value = localStorage.getItem('ppass') || ''; } catch(e){}
-  show('menuModal', true);
-};
-$('menuCloseBtn').onclick = () => show('menuModal', false);
-
-$('tabProfileBtn').onclick = () => {
-  $('tabProfileBtn').classList.add('active'); $('tabFriendsBtn').classList.remove('active');
-  $('contentProfile').style.display = 'block'; $('contentFriends').style.display = 'none';
-};
-$('tabFriendsBtn').onclick = () => {
-  $('tabFriendsBtn').classList.add('active'); $('tabProfileBtn').classList.remove('active');
-  $('contentFriends').style.display = 'block'; $('contentProfile').style.display = 'none';
-};
-
-$('saveProfileBtn').onclick = () => {
-  const v = $('profileNameField').value.trim();
-  const pass = $('profilePassField').value.trim();
-  if (v) {
-    $('name').value = v;
-    try {
-      localStorage.setItem('pname', v);
-      localStorage.setItem('ppass', pass);
-    } catch(e){}
-    socket.emit('updateProfile', { name: v, password: pass });
-    toast('プロフィール＆パスワードを保存しました！');
-  }
-  show('menuModal', false);
-};
-
-$('submitAddFriendBtn').onclick = () => {
-  const fName = $('addFriendNameInput').value.trim();
-  const fPass = $('addFriendPassInput').value.trim();
-  if (!fName || !fPass) {
-    alert('友達のユーザー名とパスワードの両方を入力してください');
-    return;
-  }
-  socket.emit('addFriendByPassword', { name: fName, password: fPass });
-  $('addFriendNameInput').value = '';
-  $('addFriendPassInput').value = '';
-};
-
-socket.on('friendAddResult', (data) => {
-  toast(data.msg);
-  if (data.success && data.friends) {
-    myFriendsList = data.friends;
-    updateFriendUI();
-  }
-});
-
-function updateFriendUI() {
-  const container = $('friendListContainer');
-  container.innerHTML = '';
-  if (!myFriendsList.length) {
-    container.innerHTML = '<p style="text-align:center;color:#9ca3af;font-size:13px;">登録フレンドはまだいません</p>';
-    return;
-  }
-  myFriendsList.forEach(fName => {
-    const item = document.createElement('div');
-    item.style.cssText = 'padding:6px 10px; margin-bottom:4px; background:rgba(255,255,255,0.1); border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:14px;';
-    item.innerHTML = `<span>👤 ${fName}</span> <span style="color:#4ade80; font-size:12px;">フレンド</span>`;
-    container.appendChild(item);
-  });
-}
-
-// ================= 設定・音量・デバイス =================
+// ================= 設定（音量・デバイス）=================
 let settings = { bgm: 0.5, se: 0.8, mode: null };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('settings') || '{}')); } catch (e) {}
 if (!settings.mode) settings.mode = (navigator.maxTouchPoints > 0 && /iPad|Macintosh|Android/.test(navigator.userAgent)) ? 'ipad' : 'pc';
 function saveSettings() { try { localStorage.setItem('settings', JSON.stringify(settings)); } catch (e) {} }
 
+// ================= サウンド（BGMとSEを別々の音量で）=================
 let AC = null, bgmG = null, seG = null, bgmTimer = null, bgmMode = '', bgmStep = 0;
 function initAudio() {
   if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
@@ -452,6 +364,7 @@ function setBgm(mode) {
   }, p.iv);
 }
 
+// 設定モーダル
 function refreshSettingsUI() {
   $('setBgm').value = Math.round(settings.bgm * 100); $('vBgm').textContent = Math.round(settings.bgm * 100);
   $('setSe').value = Math.round(settings.se * 100); $('vSe').textContent = Math.round(settings.se * 100);
@@ -463,32 +376,23 @@ $('setClose').onclick = () => show('settings', false);
 $('settings').addEventListener('click', (e) => { if (e.target === $('settings')) show('settings', false); });
 $('setBgm').addEventListener('input', (e) => { settings.bgm = e.target.value / 100; $('vBgm').textContent = e.target.value; applyVol(); saveSettings(); });
 $('setSe').addEventListener('input', (e) => { settings.se = e.target.value / 100; $('vSe').textContent = e.target.value; applyVol(); saveSettings(); });
+$('setSe').addEventListener('change', (e) => { beep(880, 0.12, 0.12, 'sine'); e.target.blur(); });
+$('setBgm').addEventListener('change', (e) => e.target.blur());
 $('modePc').onclick = () => { settings.mode = 'pc'; saveSettings(); refreshSettingsUI(); updateTouchUI(); };
 $('modePad').onclick = () => { settings.mode = 'ipad'; saveSettings(); refreshSettingsUI(); updateTouchUI(); };
 
-function resize() {
+function resize() {                                         // iPad等：解像度(DPR)と画面サイズ(4:3縦横)に追従
   DPR = Math.min(2, window.devicePixelRatio || 1);
   VW = innerWidth; VH = innerHeight;
   cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
-  vs = clamp(Math.min(VW, VH) / 720, 0.8, 1.3);
+  vs = clamp(Math.min(VW, VH) / 720, 0.8, 1.3);              // 画面サイズに応じて見える範囲をそろえる
 }
 addEventListener('resize', resize); addEventListener('orientationchange', resize); resize();
 setScreen('title');
 
-try {
-  $('name').value = localStorage.getItem('pname') || '';
-  socket.emit('updateProfile', { name: $('name').value, password: localStorage.getItem('ppass') || '' });
-} catch (e) {}
-
-function nm() {
-  const v = $('name').value.trim();
-  try {
-    localStorage.setItem('pname', v);
-    socket.emit('updateProfile', { name: v, password: localStorage.getItem('ppass') || '' });
-  } catch (e) {}
-  return v;
-}
-
+// ================= スタート画面・ロビー =================
+try { $('name').value = localStorage.getItem('pname') || ''; } catch (e) {}
+function nm() { const v = $('name').value.trim(); try { localStorage.setItem('pname', v); } catch (e) {} return v; }
 $('btnCreate').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('create', { name: nm(), skin: skinSel }); };
 $('btnSolo').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('solo', { name: nm(), skin: skinSel }); };
 $('btnJoin').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('join', { name: nm(), code: $('code').value, skin: skinSel }); };
@@ -498,7 +402,6 @@ socket.on('errmsg', (m) => { $('err').textContent = m; });
 
 const roleLabel = { auto: 'おまかせ', runner: '逃げ側', oni: '鬼側' };
 const roleEmoji = { auto: '🎲', runner: '🏃', oni: '👹' };
-
 socket.on('lobby', (d) => {
   lobbyData = d;
   if (inGame && d.state === 'playing') return;
@@ -506,90 +409,30 @@ socket.on('lobby', (d) => {
   if (d.state === 'lobby') { inGame = false; hideGameUI(); show('result', false); }
   if (!inGame) { show('title', false); show('lobby', true); setScreen('lobby'); setBgm('lobby'); renderLobby(); }
 });
-
-// ゲーム内と同じドット絵・人型キャラを直接描画する関数
-function drawLobbyCharacter(c, role, skinIdx) {
-  const isOni = role === 'oni', sk = SKINS[skinIdx || 0];
-  c.clearRect(0, 0, 120, 150);
-  c.save();
-  c.translate(60, 110);
-  c.scale(3.2, 3.2); // 立ち姿を大きく拡大表示
-
-  const skinColor = isOni ? '#f87171' : '#f5cfa8';
-  const shirtColor = isOni ? sk.o : sk.c;
-  const pantsColor = isOni ? '#facc15' : '#334155';
-
-  // 脚
-  c.strokeStyle = pantsColor; c.lineWidth = 4; c.lineCap = 'round';
-  c.beginPath(); c.moveTo(-3, 2); c.lineTo(-3, 14); c.stroke();
-  c.beginPath(); c.moveTo(3, 2); c.lineTo(3, 14); c.stroke();
-
-  // 胴体
-  c.fillStyle = shirtColor;
-  rr(c, -7, -16, 14, 18, 3); c.fill();
-
-  // 頭
-  c.fillStyle = skinColor;
-  c.beginPath(); c.arc(0, -23, 8, 0, Math.PI * 2); c.fill();
-
-  // 鬼の角（鬼の場合のみ）
-  if (isOni) {
-    c.fillStyle = '#fde68a';
-    c.beginPath(); c.moveTo(-4, -28); c.lineTo(-2, -35); c.lineTo(0, -28); c.fill();
-    c.beginPath(); c.moveTo(0, -28); c.lineTo(2, -35); c.lineTo(4, -28); c.fill();
-  }
-
-  // 目
-  c.fillStyle = '#1e293b';
-  c.fillRect(-3, -24, 2, 3);
-  c.fillRect(1, -24, 2, 3);
-
-  c.restore();
-}
-
-// 人型キャラクターを並べる新しいロビー描画
 function renderLobby() {
   const d = lobbyData, me = d.players.find((p) => p.id === d.you) || { name: '', role: 'auto', skin: 0 };
   $('codeNum').textContent = d.code; $('codeBig').textContent = d.code;
-  
-  const arena = $('brawlersArena'); arena.innerHTML = '';
+  const ro = $('roster'); ro.innerHTML = '';
   for (const p of d.players) {
-    const card = document.createElement('div'); card.className = 'brawler-card';
-    
-    // 人型キャラクター描画用キャンバス
-    const cCv = document.createElement('canvas');
-    cCv.className = 'char-canvas';
-    cCv.width = 120; cCv.height = 150;
-    const cCtx = cCv.getContext('2d');
-    drawLobbyCharacter(cCtx, p.role, p.skin);
-
-    // 頭上の名前プレート（ホストは 👑 付き）
-    const namePlate = document.createElement('div');
-    namePlate.className = 'brawler-nameplate';
-    namePlate.textContent = p.name + (p.id === d.host ? ' 👑' : '');
-
-    // 足元のロールアイコン
-    const roleFoot = document.createElement('div');
-    roleFoot.className = 'brawler-rolefoot';
-    roleFoot.textContent = roleEmoji[p.role];
-
-    card.append(cCv, namePlate, roleFoot);
-    arena.appendChild(card);
+    const c = document.createElement('div'); c.className = 'card ' + p.role + (p.id === d.you ? ' me' : ''); c.dataset.pid = p.id;
+    const sp = document.createElement('span'); sp.textContent = (p.id === d.host ? '👑 ' : '') + p.name;
+    const b = document.createElement('span'); b.className = 'badge ' + p.role; b.textContent = roleLabel[p.role];
+    c.append(sp, b); ro.appendChild(c);
   }
-
-  const mySk = SKINS[me.skin || 0];
+  const sk = SKINS[me.skin || 0];
+  $('avatar').className = 'avatar ' + me.role; $('avatar').textContent = roleEmoji[me.role];
+  $('avatar').style.background = 'radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), ' + (me.role === 'oni' ? sk.o : sk.c) + ' 60%)';
   skinSel = me.skin || 0; try { localStorage.setItem('pskin', skinSel); } catch (e) {}
-  $('skname').textContent = 'スキン：' + mySk.n; buildSkins();
-
+  $('skname').textContent = 'スキン：' + sk.n; buildSkins();
+  $('myname').textContent = me.name; $('myrole').textContent = roleLabel[me.role];
   document.querySelectorAll('#lobby [data-role]').forEach((b) => b.classList.toggle('active', b.dataset.role === me.role));
   const host = d.host === d.you;
   $('start').style.display = host ? '' : 'none';
   $('start').disabled = d.state !== 'lobby';
-  $('rulesBtn').style.display = '';
+  $('rulesBtn').style.display = soloLobbyHide() ? 'none' : '';
   $('rulesBtn').textContent = host ? '⚙ ルール設定' : '📋 ルール確認';
-  $('lnote').textContent = d.state === 'playing' ? '試合中です。終了までお待ちください。' : (host ? '準備完了したらゲーム開始を押してください' : 'ホストの開始を待っています…');
+  $('lnote').textContent = d.state === 'playing' ? '試合中です。終了までお待ちください。' : (host ? '鬼を選んだ人がいなければCPUの鬼が参加します。' : 'ホストの開始を待っています…');
 }
-
 function buildSkins() {
   const box = $('skins'); box.innerHTML = '';
   SKINS.forEach((sk, i) => {
@@ -608,13 +451,13 @@ $('copyBtn').onclick = (e) => {
   e.stopPropagation();
   try { navigator.clipboard.writeText(lobbyData ? lobbyData.code : ''); $('copyBtn').textContent = 'コピーした！'; setTimeout(() => $('copyBtn').textContent = 'コードをコピー', 1500); } catch (er) {}
 };
-
 function hideGameUI() {
   for (const id of ['banner', 'placeBtn', 'ptimer', 'itemBtn', 'hpbar', 'prompt']) $(id).style.display = 'none';
   mini.style.display = 'none'; hud.style.display = 'none'; $('touch').style.display = 'none';
   mapOpen = false; fm.style.display = 'none';
 }
 
+// ================= ゲーム開始・終了 =================
 socket.on('init', (w) => {
   world = w; cfg = w.cfg; myRole = w.role; myName = w.name; mySkin = w.skin || 0; soloMode = !!w.solo;
   TH = (2 - w.side) * Math.PI / 2;
@@ -626,15 +469,13 @@ socket.on('init', (w) => {
   mini.style.display = 'block'; hud.style.display = 'block';
   setScreen('game'); setBgm('game'); updateTouchUI();
   $('backBtn').textContent = soloMode ? 'タイトルに戻る ▶' : 'ロビーに戻る ▶';
-  toast(myRole === 'runner' ? '逃げ側：消しゴムを探し、自分のエレベーターから脱出せよ！' : '鬼側：消しゴムを設置しよう！');
+  toast(myRole === 'runner' ? '逃げ側：消しゴムを探し、自分のエレベーター(画面下)から脱出せよ！ [M]で全体マップ' : '鬼側：消しゴムを好きな場所に設置しよう！ [M]で全体マップ');
 });
-
 socket.on('ev', (m) => toast(m));
 function toast(m) {
   const d = document.createElement('div'); d.textContent = m; $('toast').appendChild(d);
   setTimeout(() => d.remove(), 3600);
 }
-
 socket.on('state', (s) => {
   state = s;
   if (!inGame) return;
@@ -645,12 +486,16 @@ socket.on('state', (s) => {
     const runnerWin = s.s === 'runwin', iWin = (myRole === 'runner') === runnerWin;
     $('resTitle').textContent = iWin ? '勝利！' : '敗北…';
     $('resTitle').style.color = iWin ? '#4ade80' : '#f87171';
-    $('resMsg').textContent = s.s === 'runwin' ? '脱出成功！' : 'ゲーム終了';
+    $('resMsg').textContent = s.s === 'runwin' ? (s.slide < 250 ? '鬼が目の前まで迫る中、ギリギリで扉が閉まった！' : '消しゴムを持ってエレベーターで脱出成功！')
+      : s.s === 'oniwin' ? '逃げ側は全員やられた。' : '時間切れ。逃げ切れなかった。';
     show('result', true); mapOpen = false; fm.style.display = 'none';
   }
 });
-socket.on('fx', (f) => { fxs.push({ t: f.t, x: f.x, y: f.y, t0: performance.now() }); });
-
+socket.on('fx', (f) => {
+  fxs.push({ t: f.t, x: f.x, y: f.y, t0: performance.now() });
+  if (f.t === 'stun') { beep(200, 0.35, 0.12, 'sawtooth'); beep(1500, 0.1, 0.06); } else if (f.t === 'hit') beep(120, 0.25, 0.16, 'sawtooth'); else beep(660, 0.18, 0.05, 'sine');
+});
+// ================= スタンプ・定型文チャット =================
 const CHATS = ['👍', '😂', '😱', '🙏', '🔥', '❤️', '👀', '💤', 'こっちに逃げて！', '鬼が来る！', '消しゴム発見！', '助けて！', 'ありがとう！', 'ナイス！', '待って！', '急げ！'];
 const bubbles = {};
 function buildChat() {
@@ -667,22 +512,29 @@ function toggleChat() {
   const pal = $('chatPal'); pal.style.display = pal.style.display === 'grid' ? 'none' : 'grid';
 }
 $('chatBtn').onclick = () => { initAudio(); toggleChat(); };
-socket.on('chat', (m) => { bubbles[m.id] = { i: m.i, t0: performance.now() }; });
+socket.on('chat', (m) => {
+  bubbles[m.id] = { i: m.i, t0: performance.now() };
+  if (inGame) return;
+  const card = [...document.querySelectorAll('#roster .card')].find((c) => c.dataset.pid === m.id);
+  if (card) { const sp = document.createElement('span'); sp.className = 'bub'; sp.textContent = CHATS[m.i]; card.appendChild(sp); setTimeout(() => sp.remove(), 3000); }
+  if (lobbyData && m.id === lobbyData.you) { $('avBubble').textContent = CHATS[m.i]; $('avBubble').style.display = 'block'; setTimeout(() => { $('avBubble').style.display = 'none'; }, 3000); }
+});
 buildChat();
 
+// ================= ホストのカスタム設定（ルール）=================
 const RULE_DEF = [
   { k: 'matchTime', lab: '試合時間', min: 120, max: 600, st: 30, u: '秒' },
   { k: 'placeTime', lab: '設置時間', min: 10, max: 60, st: 5, u: '秒' },
   { k: 'runnerSpeed', lab: '逃げ側の速度', min: 70, max: 150, st: 5, u: '%' },
   { k: 'oniSpeed', lab: '鬼の速度', min: 70, max: 150, st: 5, u: '%' }
 ];
-const RULE_TG = [{ k: 'items', lab: '🎁 アイテム' }, { k: 'potions', lab: '🧪 回復薬' }, { k: 'warps', lab: '🌀 ワープ' }, { k: 'crouch', lab: '🫥 しゃがみ' }];
+const RULE_TG = [{ k: 'items', lab: '🎁 アイテム・宝箱' }, { k: 'potions', lab: '🧪 回復薬' }, { k: 'warps', lab: '🌀 ワープ地点' }, { k: 'crouch', lab: '🫥 しゃがみ' }];
 const RULE_DEFAULT = { matchTime: 300, placeTime: 30, runnerSpeed: 100, oniSpeed: 100, items: true, potions: true, warps: true, crouch: true };
 let rulesDraft = null;
-
+function soloLobbyHide() { return false; }
 function buildRules() {
   const host = !!(lobbyData && lobbyData.host === lobbyData.you), box = $('rulesBody'); box.innerHTML = '';
-  $('rulesNote').textContent = host ? 'ホストだけが変更できます。' : 'ホストが設定したルールです。';
+  $('rulesNote').textContent = host ? 'ホストだけが変更できます。変更後に「この設定にする」を押してください。' : 'ホストが設定したルールです（確認のみ）。';
   $('rulesApply').style.display = host ? '' : 'none'; $('rulesReset').style.display = host ? '' : 'none';
   for (const d of RULE_DEF) {
     const row = document.createElement('div'); row.className = 'row';
@@ -705,22 +557,22 @@ $('rulesApply').onclick = () => { socket.emit('setRules', rulesDraft); show('rul
 $('rulesReset').onclick = () => { rulesDraft = Object.assign({}, RULE_DEFAULT); buildRules(); };
 $('rulesClose').onclick = () => show('rules', false);
 
-$('backBtn').onclick = () => {
-  if (soloMode) { socket.emit('leave'); goTitle(); }
-  else { socket.emit('backToLobby'); leaveResult(); }
-};
 function leaveResult() { inGame = false; resultShown = false; show('result', false); hideGameUI(); if (lobbyData) { show('lobby', true); setScreen('lobby'); setBgm('lobby'); renderLobby(); } }
 function goTitle() { inGame = false; resultShown = false; lobbyData = null; show('result', false); hideGameUI(); show('lobby', false); show('title', true); setScreen('title'); setBgm('lobby'); }
-
+$('backBtn').onclick = () => {
+  if (soloMode) { socket.emit('leave'); goTitle(); }          // CPU戦：ロビーを挟まずタイトルへ
+  else { socket.emit('backToLobby'); leaveResult(); }
+};
 const doAction = () => socket.emit('action');
 const doItem = () => socket.emit('useItem');
 const doCrouch = () => socket.emit('crouch');
 $('placeBtn').onclick = doAction;
 $('itemBtn').onclick = doItem;
 
+// ================= 入力（PC：キーボード／iPad：バーチャルパッド）=================
 const keys = { u: 0, d: 0, l: 0, r: 0 };
 const kmap = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
-function sendInput() {
+function sendInput() {                                    // 画面基準の入力 → ワールド基準へ回転して送信
   const sx = keys.r - keys.l, sy = keys.d - keys.u;
   const c = Math.round(Math.cos(TH)), s = Math.round(Math.sin(TH));
   const wx = sx * c + sy * s, wy = -sx * s + sy * c;
@@ -746,12 +598,15 @@ addEventListener('keyup', (e) => {
   e.preventDefault();
   if (keys[k]) { keys[k] = 0; sendInput(); }
 });
+addEventListener('blur', () => { for (const k in keys) keys[k] = 0; if (inGame) sendInput(); });
 
 function updateTouchUI() {
   const on = settings.mode === 'ipad' && inGame;
   $('touch').style.display = on ? 'block' : 'none';
   document.body.classList.toggle('ipad', settings.mode === 'ipad');
+  if (!on) { for (const k in keys) keys[k] = 0; }
 }
+// バーチャルDパッド（アナログ）
 const dpad = $('dpad'), knob = $('knob');
 let dpId = null;
 function setKeysVec(l, r, u, d) {
@@ -767,11 +622,20 @@ function dpMove(e) {
   const th = R * 0.28;
   setKeysVec(dx < -th, dx > th, dy < -th, dy > th);
 }
-dpad.addEventListener('pointerdown', (e) => { e.preventDefault(); initAudio(); dpId = e.pointerId; dpMove(e); });
+dpad.addEventListener('pointerdown', (e) => { e.preventDefault(); initAudio(); dpId = e.pointerId; try { dpad.setPointerCapture(e.pointerId); } catch (er) {} dpMove(e); });
 dpad.addEventListener('pointermove', (e) => { if (e.pointerId === dpId) { e.preventDefault(); dpMove(e); } });
 const dpEnd = (e) => { if (e.pointerId !== dpId) return; dpId = null; knob.style.transform = ''; setKeysVec(0, 0, 0, 0); };
 dpad.addEventListener('pointerup', dpEnd); dpad.addEventListener('pointercancel', dpEnd);
+function bindTouchBtn(id, fn) {
+  const b = $(id);
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); initAudio(); b.style.transform = 'scale(.92)'; fn(); });
+  const up = () => { b.style.transform = ''; };
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+}
+bindTouchBtn('tbSpace', doAction); bindTouchBtn('tbQ', doItem); bindTouchBtn('tbMap', toggleMap); bindTouchBtn('tbCrouch', doCrouch);
+document.addEventListener('contextmenu', (e) => e.preventDefault());
 
+// ================= 迷路の事前描画 =================
 function buildMaze() {
   const { grid, T, N, map: M } = world;
   mazeCanvas = document.createElement('canvas'); mazeCanvas.width = M; mazeCanvas.height = M;
@@ -785,8 +649,9 @@ function buildMaze() {
   }
 }
 
+// ================= 描画ヘルパ =================
 function smooth(cur, tgt, k) { cur.x += (tgt.x - cur.x) * k; cur.y += (tgt.y - cur.y) * k; }
-function motion(v, tgt, k, dt) {
+function motion(v, tgt, k, dt) {                          // 補間＋歩行アニメ用の移動量
   const ox = v.x, oy = v.y;
   v.x += (tgt.x - v.x) * k; v.y += (tgt.y - v.y) * k;
   const mx = v.x - ox, my = v.y - oy, sp = Math.hypot(mx, my) / Math.max(dt, 0.001);
@@ -808,6 +673,7 @@ function w2s(x, y) {
 function rr(c, x, y, w, h, r) {
   c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
+// MONO消しゴム：青・白・黒の3色ストライプのスリーブ
 function drawMono(c, sc) {
   c.save(); c.scale(sc, sc);
   c.fillStyle = '#f8fafc'; rr(c, -19, -9, 38, 18, 3); c.fill();
@@ -823,6 +689,8 @@ function metalPanel(x, y, w, h) {
   const g = ctx.createLinearGradient(x, 0, x + w, 0);
   g.addColorStop(0, '#6b7280'); g.addColorStop(0.45, '#d1d5db'); g.addColorStop(0.55, '#9ca3af'); g.addColorStop(1, '#4b5563');
   ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = 'rgba(0,0,0,.25)';
+  for (let i = 1; i < 4; i++) ctx.fillRect(x + (w * i) / 4 - 1, y + 4, 2, h - 8);
 }
 function drawElevator(i, el, now, owned, showOpen) {
   const E = world.elevs[i], T = world.T, cx = E.tx * T + T / 2, cy = E.ty * T + T / 2;
@@ -831,20 +699,41 @@ function drawElevator(i, el, now, owned, showOpen) {
   const ig = ctx.createLinearGradient(0, 0, 0, T);
   ig.addColorStop(0, '#fff7d6'); ig.addColorStop(1, '#b59a63');
   ctx.fillStyle = ig; ctx.fillRect(0, 0, T, T);
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.fillRect(0, 0, 6, T); ctx.fillRect(T - 6, 0, 6, T);
+  ctx.fillStyle = '#7c6a43'; ctx.fillRect(10, T / 2, T - 20, 4);
   const half = T / 2, off = door * half;
   ctx.save(); ctx.beginPath(); ctx.rect(0, 0, T, T); ctx.clip();
   metalPanel(-off, 0, half, T); metalPanel(half + off, 0, half, T);
+  if (open && el.left < 8 && door < 0.9) {
+    ctx.fillStyle = Math.floor(now / 150) % 2 ? '#facc15' : '#111';
+    ctx.fillRect(-off + half - 5, 0, 5, T); ctx.fillRect(half + off, 0, 5, T);
+  }
   ctx.restore();
   ctx.strokeStyle = owned ? '#22d3ee' : '#111827'; ctx.lineWidth = owned ? 7 : 6; ctx.strokeRect(3, 3, T - 6, T - 6);
+  const warn = open && el.left < 3, mid = open && el.left < 8, blink = Math.floor(now / (warn ? 90 : 220)) % 2;
+  ctx.fillStyle = !showOpen ? '#4b5563' : !open ? '#7f1d1d' : warn ? (blink ? '#ef4444' : '#450a0a') : mid ? (blink ? '#f59e0b' : '#78350f') : '#22c55e';
+  ctx.fillRect(T / 2 - 16, 8, 32, 8);
+  ctx.restore();
+  const lx = cx + E.dx * (T / 2 + 14), ly = cy + E.dy * (T / 2 + 14);
+  ctx.save(); ctx.translate(lx, ly); ctx.rotate(-TH);
+  ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+  if (owned) { ctx.fillStyle = '#67e8f9'; ctx.fillText(open ? 'YOUR EXIT ' + Math.ceil(el.left) : 'YOUR EXIT', 0, 0); }
+  else if (showOpen) { ctx.fillStyle = open ? (warn ? '#f87171' : '#fde68a') : '#9ca3af'; ctx.fillText(open ? 'EXIT ' + Math.ceil(el.left) : 'EXIT', 0, 0); }
+  else { ctx.fillStyle = '#6b7280'; ctx.fillText('LOCK', 0, 0); }
   ctx.restore();
 }
 function drawPads(now) {
+  const dim = state.me.wcd > 0 ? 0.45 : 1;
   world.pads.forEach((p, i) => {
     const col = PADCOL[p.pair];
-    ctx.save(); ctx.translate(p.x, p.y);
+    ctx.save(); ctx.translate(p.x, p.y); ctx.globalAlpha = dim;
     const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 34);
     g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 7); ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = 3;
+    for (let k = 0; k < 3; k++) { const a0 = now / 500 + k * 2.1; ctx.beginPath(); ctx.arc(0, 0, 24, a0, a0 + 1.2); ctx.stroke(); }
+    ctx.rotate(-TH); ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('AB'[p.pair] + (i % 2 + 1), 0, 1);
     ctx.restore();
   });
 }
@@ -852,7 +741,10 @@ function drawChests(now) {
   world.chests.forEach((c, i) => {
     const open = state.ch && state.ch[i];
     ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(-TH); ctx.globalAlpha = open ? 0.4 : 1;
+    if (!open) { ctx.shadowColor = '#fde047'; ctx.shadowBlur = 12 + 6 * Math.sin(now / 250); }
     ctx.fillStyle = '#92400e'; ctx.fillRect(-16, -6, 32, 18);
+    ctx.fillStyle = open ? '#451a03' : '#b45309'; ctx.fillRect(-16, -14, 32, open ? 6 : 8);
+    ctx.fillStyle = '#fbbf24'; ctx.fillRect(-3, -4, 6, 8); ctx.fillRect(-16, 2, 32, 3);
     ctx.restore();
   });
 }
@@ -860,12 +752,14 @@ function drawPotions(now) {
   world.potions.forEach((p, i) => {
     if (state.pt && state.pt[i]) return;
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(-TH);
+    ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 14 + 6 * Math.sin(now / 300);
     ctx.font = '26px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🧪', 0, -2);
+    ctx.fillText('🧪', 0, -2 + Math.sin(now / 350) * 2);
     ctx.restore();
   });
 }
 
+// ---------- 人型キャラクター（頭・胴体・手足）----------
 function limb(x0, y0, x1, y1, w, col) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
 function drawHuman(e, v, alpha, isMe, now) {
   const isOni = e.role === 'oni', sk = SKINS[e.sk || 0];
@@ -876,24 +770,244 @@ function drawHuman(e, v, alpha, isMe, now) {
     ctx.beginPath(); ctx.moveTo(-9, -9); ctx.lineTo(9, 9); ctx.moveTo(9, -9); ctx.lineTo(-9, 9); ctx.stroke();
     ctx.restore(); return;
   }
+  if (e.inv && Math.floor(now / 100) % 2) ctx.globalAlpha *= 0.4;
+  // 足元（影・自分の印・クールタイム）
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0, 12, 13, 5, 0, 0, 7); ctx.fill();
+  if (isMe) { ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 12, 16, 6.5, 0, 0, 7); ctx.stroke(); }
+  if (isMe && e.wcd > 0) { ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 12, 20, 8, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, e.wcd / world.warpCd)); ctx.stroke(); }
+  if (isMe && e.bs > 0) { ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.ellipse(0, 12, 24, 10, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
   const fx = v.fx || 1, sw = v.mv ? Math.sin(v.ph || 0) : 0;
   const bob = v.mv ? Math.abs(Math.cos(v.ph || 0)) * 1.6 : Math.sin(now / 420) * 0.6;
   const skin = isOni ? (e.st ? '#9ca3af' : '#f87171') : '#f5cfa8';
   const shirt = isOni ? (e.st ? '#6b7280' : sk.o) : sk.c;
   ctx.save(); ctx.scale(fx, e.cr ? 0.78 : 1); ctx.translate(0, -bob + (e.cr ? 4 : 0));
+  // 脚
   const pants = isOni ? '#facc15' : '#334155';
   limb(-4, 1, -4 + sw * 6, 12, 5, pants); limb(4, 1, 4 - sw * 6, 12, 5, pants);
+  ctx.fillStyle = '#111827'; ctx.beginPath(); ctx.arc(-4 + sw * 6, 12.5, 3, 0, 7); ctx.arc(4 - sw * 6, 12.5, 3, 0, 7); ctx.fill();
+  // 奥の腕
+  limb(-8, -14, -8 - sw * 5, -3, 4, skin);
+  // 胴体
   ctx.fillStyle = shirt; rr(ctx, -8.5, -17, 17, 19, 4); ctx.fill();
+  ctx.strokeStyle = isOni ? '#111' : sk.r; ctx.lineWidth = 1.6; ctx.stroke();
+  if (isOni) {                                       // 虎柄パンツ
+    ctx.fillStyle = '#facc15'; ctx.fillRect(-8.5, -1, 17, 5);
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 1.4;
+    for (let i = -6; i <= 6; i += 4) { ctx.beginPath(); ctx.moveTo(i, -1); ctx.lineTo(i + 2, 4); ctx.stroke(); }
+  }
+  // 手前の腕（鬼は金棒）
+  limb(8, -14, 8 + sw * 5, -3, 4, skin);
+  if (isOni) { limb(8 + sw * 5, -3, 13 + sw * 5, -22, 3.5, '#92400e'); ctx.fillStyle = '#3f3f46'; ctx.beginPath(); ctx.arc(13 + sw * 5, -24, 5, 0, 7); ctx.fill(); }
+  // 頭
   ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, -25, 9, 0, 7); ctx.fill();
+  if (isOni) {
+    ctx.fillStyle = '#1f0a0a'; ctx.beginPath(); ctx.arc(0, -27, 9.5, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.moveTo(-7, -31); ctx.lineTo(-5, -42); ctx.lineTo(-1.5, -32); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(7, -31); ctx.lineTo(5, -42); ctx.lineTo(1.5, -32); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-3, -25, 2.6, 0, 7); ctx.arc(4, -25, 2.6, 0, 7); ctx.fill();
+    ctx.fillStyle = '#7f1d1d'; ctx.beginPath(); ctx.arc(-2.4, -25, 1.3, 0, 7); ctx.arc(4.6, -25, 1.3, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-6, -29); ctx.lineTo(-1, -27); ctx.moveTo(7, -29); ctx.lineTo(2, -27); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-2, -20); ctx.lineTo(-1, -17); ctx.lineTo(0, -20); ctx.moveTo(2, -20); ctx.lineTo(3, -17); ctx.lineTo(4, -20); ctx.fill();
+  } else {
+    ctx.fillStyle = sk.h; ctx.beginPath(); ctx.arc(0, -26, 9.6, Math.PI * 0.95, Math.PI * 2.05); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-2, -24.5, 1.4, 0, 7); ctx.arc(4, -24.5, 1.4, 0, 7); ctx.fill();
+  }
   ctx.restore();
-  ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+  // 胸のマーク（左右反転させない）
+  if (!isOni && sk.m) { ctx.fillStyle = sk.r; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(sk.m, 0, -8 - bob); }
+  if (isOni && e.st) { ctx.font = '14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('💫', 0, -46 + Math.sin(now / 150) * 2); }
+  // 頭上：消しゴム所持・HPバー（逃げ側）
+  if (!isOni) {
+    if (e.e) { ctx.save(); ctx.translate(0, -48 - bob); drawMono(ctx, 0.8); ctx.restore(); }
+    const hp = e.hp === undefined ? 100 : e.hp;
+    if (isMe || hp < 100 || !isMe) {
+      ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(-14, -(e.e ? 62 : 52), 28, 5);
+      ctx.fillStyle = hp > 50 ? '#22c55e' : '#ef4444'; ctx.fillRect(-13, -(e.e ? 61 : 51), 26 * hp / 100, 3);
+    }
+  }
+  ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   ctx.fillText(e.n || '', 0, 28);
+  const bb = bubbles[e.id];                                   // スタンプ・定型文のフキダシ
+  if (bb && performance.now() - bb.t0 < 3000) {
+    const txt = CHATS[bb.i];
+    ctx.globalAlpha = 1; ctx.save(); ctx.translate(0, -(e.e ? 80 : 68));
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (bb.i < 8) { ctx.font = '30px sans-serif'; ctx.fillText(txt, 0, 0); }
+    else {
+      ctx.font = 'bold 13px sans-serif';
+      const w = ctx.measureText(txt).width + 18;
+      ctx.fillStyle = '#fff'; rr(ctx, -w / 2, -13, w, 26, 10); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-5, 12); ctx.lineTo(0, 20); ctx.lineTo(5, 12); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.fillText(txt, 0, 1);
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+// 暗がりの影：人型のシルエットだけがうっすら見える（鬼は目が赤く光る）
+function drawSil(e, v, a, now) {
+  const isOni = e.role === 'oni';
+  ctx.save(); ctx.translate(v.x, v.y); ctx.rotate(-TH);
+  ctx.globalAlpha = a * (0.8 + 0.2 * Math.sin(now / 130 + (v.x + v.y) * 0.05));
+  ctx.beginPath();
+  ctx.arc(0, -25, 9, 0, 7); ctx.rect(-8.5, -17, 17, 19); ctx.rect(-8, 1, 6, 12); ctx.rect(2, 1, 6, 12);
+  ctx.rect(-13, -16, 4.5, 13); ctx.rect(8.5, -16, 4.5, 13);
+  if (isOni) { ctx.moveTo(-7, -31); ctx.lineTo(-5, -42); ctx.lineTo(-1.5, -32); ctx.moveTo(7, -31); ctx.lineTo(5, -42); ctx.lineTo(1.5, -32); }
+  ctx.fillStyle = '#050308'; ctx.fill();
+  ctx.strokeStyle = isOni ? 'rgba(255,70,70,0.75)' : 'rgba(130,225,255,0.65)'; ctx.lineWidth = 1.6; ctx.stroke();
+  if (isOni && !e.st) {
+    ctx.fillStyle = '#ff2a2a'; ctx.shadowColor = '#ff2a2a'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(-3, -25, 2.2, 0, 7); ctx.arc(4, -25, 2.2, 0, 7); ctx.fill();
+  }
   ctx.restore();
 }
 
+// 画面端の方向インジケーター（画面内ならfalse）
+function edgeArrow(wx, wy, color, stroke, label, now) {
+  const p = w2s(wx, wy), W = VW, H = VH, m = 56;
+  if (p.x > m && p.x < W - m && p.y > m && p.y < H - m) return false;
+  const cx = W / 2, cy = H / 2, dx = p.x - cx, dy = p.y - cy;
+  const t = Math.min((W / 2 - m) / Math.max(Math.abs(dx), 1e-3), (H / 2 - m) / Math.max(Math.abs(dy), 1e-3));
+  const ax = cx + dx * t, ay = cy + dy * t, ang = Math.atan2(dy, dx);
+  ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang);
+  ctx.globalAlpha = 0.8 + 0.2 * Math.sin(now / 160); ctx.fillStyle = color; ctx.strokeStyle = stroke; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(-14, -18); ctx.lineTo(-14, 18); ctx.closePath(); ctx.stroke(); ctx.fill();
+  ctx.restore();
+  if (label) {
+    ctx.save(); ctx.fillStyle = color; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(label, ax - Math.cos(ang) * 52, ay - Math.sin(ang) * 52 + 4); ctx.restore();
+  }
+  return true;
+}
+
+// ================= エレベーター内の専用クローズアップ演出（実マップは映さない）=================
+function drawCinematic(now) {
+  const W = VW, H = VH, el = state.el;
+  if (!bdStart) bdStart = Math.max(0.5, el.door);
+  const closure = clamp(1 - el.door / bdStart, 0, 1);
+  const bd = state.bd || { left: 0, total: 1 };
+  // 鬼の接近度だけを演出に使う（位置・マップは映さない）
+  let nd = 9999, lat = 0;
+  for (const e of state.ents) if (e.role === 'oni') {
+    const d = Math.hypot(e.x - camV.x, e.y - camV.y);
+    if (d < nd) { nd = d; lat = ((e.x - camV.x) * Math.cos(TH) - (e.y - camV.y) * Math.sin(TH)); }
+  }
+  const prox = nd < 650 ? clamp(1 - nd / 650, 0, 1) : 0, danger = nd < 520 ? clamp((520 - nd) / 400, 0, 1) : 0;
+  const sh = 1.2 + closure * 1.6 + danger * 6;
+  ctx.save(); ctx.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
+  // エレベーター内部：暗い壁
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#16110c'); bg.addColorStop(1, '#050403');
+  ctx.fillStyle = bg; ctx.fillRect(-20, -20, W + 40, H + 40);
+  const Wd = Math.min(W * 0.58, 700), Hd = Math.min(H * 0.72, 520), cx = W / 2, x0 = cx - Wd / 2, y0 = H * 0.5 - Hd / 2 + 18;
+  const flick = Math.random() > 0.93 ? 0.25 : 0.7 + 0.2 * Math.sin(now / 110);           // 切れかけの蛍光灯
+  const lamp = ctx.createRadialGradient(cx, 0, 10, cx, 0, H * 0.8); lamp.addColorStop(0, 'rgba(210,190,120,' + (0.22 * flick) + ')'); lamp.addColorStop(1, 'rgba(210,190,120,0)');
+  ctx.fillStyle = lamp; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(0,0,0,.4)'; for (let i = 1; i < 6; i++) { ctx.fillRect(x0 * i / 6 - 2, y0, 3, Hd); ctx.fillRect(x0 + Wd + (W - x0 - Wd) * i / 6, y0, 3, Hd); }
+  // 扉の向こう：真っ暗な闇と不気味な気配
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, Wd, Hd); ctx.clip();
+  const dk = ctx.createLinearGradient(0, y0, 0, y0 + Hd); dk.addColorStop(0, '#000'); dk.addColorStop(1, '#0d0508');
+  ctx.fillStyle = dk; ctx.fillRect(x0, y0, Wd, Hd);
+  const vx = cx, vy = y0 + Hd * 0.46;
+  ctx.strokeStyle = 'rgba(120,20,20,.16)'; ctx.lineWidth = 1.5;                         // かすかな廊下の消失線
+  for (let i = -5; i <= 5; i++) { ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(vx + i * Wd * 0.22, y0 + Hd * (i % 2 ? 1.1 : 1.0)); ctx.stroke(); }
+  for (let i = 0; i < 6; i++) { const t = ((i + (now / 1600) % 1) / 6), yy = vy + (y0 + Hd - vy) * t * t; ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + Wd, yy); ctx.stroke(); }
+  const em = ctx.createRadialGradient(vx, y0 + 6, 4, vx, y0 + 6, Hd * 0.7);              // 赤い非常灯
+  const pulse = 0.5 + 0.5 * Math.sin(now / (danger > 0 ? 120 : 380));
+  em.addColorStop(0, 'rgba(255,40,40,' + (0.18 + 0.22 * pulse + 0.2 * danger) + ')'); em.addColorStop(1, 'rgba(255,40,40,0)');
+  ctx.fillStyle = em; ctx.fillRect(x0, y0, Wd, Hd);
+  for (let i = 0; i < 5; i++) {                                                           // 漂う霧
+    const fx2 = vx + Math.sin(now / 2300 + i * 1.7) * Wd * 0.3, fy2 = vy + Math.cos(now / 2900 + i) * Hd * 0.18 + i * 14 - 20;
+    const fg = ctx.createRadialGradient(fx2, fy2, 4, fx2, fy2, Wd * 0.32);
+    fg.addColorStop(0, 'rgba(90,80,90,0.16)'); fg.addColorStop(1, 'rgba(90,80,90,0)'); ctx.fillStyle = fg; ctx.fillRect(x0, y0, Wd, Hd);
+  }
+  // 鬼の気配：赤い目が闇の奥から近づいてくる（近いほど大きく・低く・速く瞬く）
+  if (prox > 0) {
+    const ex = vx + clamp(lat / 320, -1, 1) * Wd * 0.28 * (1 - prox * 0.5), ey = vy + Hd * (0.02 + 0.3 * prox * prox);
+    const er = 2 + prox * 17, sep = 7 + prox * 52, bl = (Math.sin(now / (200 - prox * 120)) > -0.85) ? 1 : 0.15;
+    const body = ctx.createRadialGradient(ex, ey + er * 5, 2, ex, ey + er * 5, er * 14);
+    body.addColorStop(0, 'rgba(0,0,0,' + (0.9 * prox) + ')'); body.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = body; ctx.fillRect(x0, y0, Wd, Hd);
+    ctx.save(); ctx.globalAlpha = bl; ctx.shadowColor = '#ff2020'; ctx.shadowBlur = 14 + prox * 30; ctx.fillStyle = '#ff3030';
+    ctx.beginPath(); ctx.ellipse(ex - sep, ey, er * 1.3, er * 0.7, -0.25, 0, 7); ctx.ellipse(ex + sep, ey, er * 1.3, er * 0.7, 0.25, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff3'; ctx.beginPath(); ctx.arc(ex - sep, ey, er * 0.28, 0, 7); ctx.arc(ex + sep, ey, er * 0.28, 0, 7); ctx.fill();
+    if (prox > 0.7) { ctx.fillStyle = 'rgba(255,255,255,.75)'; for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(ex + i * er * 0.9 - er * 0.3, ey + er * 5); ctx.lineTo(ex + i * er * 0.9, ey + er * 7.5); ctx.lineTo(ex + i * er * 0.9 + er * 0.3, ey + er * 5); ctx.fill(); } }
+    ctx.restore();
+  }
+  const fog = ctx.createRadialGradient(cx, y0 + Hd * 0.5, Hd * 0.1, cx, y0 + Hd * 0.5, Hd * 0.78);
+  fog.addColorStop(0, 'rgba(0,0,0,0)'); fog.addColorStop(1, 'rgba(0,0,0,0.88)');
+  ctx.fillStyle = fog; ctx.fillRect(x0, y0, Wd, Hd);
+  if (danger > 0) { ctx.fillStyle = 'rgba(255,0,0,' + (0.1 * danger * (0.6 + 0.4 * Math.sin(now / 70))) + ')'; ctx.fillRect(x0, y0, Wd, Hd); }
+  ctx.restore();
+  // 閉まっていく扉
+  const pw = (Wd / 2) * closure;
+  if (pw > 0.5) { metalPanel(x0, y0, pw, Hd); metalPanel(x0 + Wd - pw, y0, pw, Hd); }
+  if (closure < 0.995) { const a1 = x0 + pw, a2 = x0 + Wd - pw; ctx.fillStyle = 'rgba(255,60,60,' + (0.45 + 0.45 * Math.sin(now / 90)) + ')'; ctx.fillRect(a1 - 3, y0, 3, Hd); ctx.fillRect(a2, y0, 3, Hd); }
+  ctx.strokeStyle = '#0b0f19'; ctx.lineWidth = 14; ctx.strokeRect(x0 - 7, y0 - 7, Wd + 14, Hd + 14);
+  ctx.strokeStyle = '#4b5563'; ctx.lineWidth = 3; ctx.strokeRect(x0 - 1, y0 - 1, Wd + 2, Hd + 2);
+  // 表示パネル
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#0b0b0b'; rr(ctx, cx - 150, y0 - 66, 300, 46, 8); ctx.fill();
+  ctx.fillStyle = (Math.floor(now / 200) % 2) ? '#fb923c' : '#ef4444'; ctx.font = 'bold 28px sans-serif';
+  ctx.fillText('閉まります ' + Math.max(0, bd.left).toFixed(1), cx, y0 - 33);
+  ctx.fillStyle = danger > 0 ? '#fca5a5' : '#9ca3af'; ctx.font = 'bold 18px sans-serif';
+  ctx.fillText(prox > 0 ? '何かが近づいてくる…' : '通路は静まり返っている…', cx, y0 + Hd + 36);
+  ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(cx - 120, y0 + Hd + 46, 240, 8);
+  ctx.fillStyle = prox > 0.6 ? '#ef4444' : '#f59e0b'; ctx.fillRect(cx - 120, y0 + Hd + 46, 240 * prox, 8);
+  ctx.restore();
+  if (danger > 0) {
+    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
+    vg.addColorStop(0, 'rgba(255,0,0,0)'); vg.addColorStop(1, 'rgba(255,0,0,' + (0.4 * danger * (0.5 + 0.5 * Math.sin(now / 80))) + ')');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  }
+}
+
+// ================= 全体マップ（Mキー）=================
+function drawFull(now) {
+  const S = fm.width, M = world.map, sc = S / M, T = world.T, el = state.el;
+  fctx.clearRect(0, 0, S, S); fctx.fillStyle = '#080614'; fctx.fillRect(0, 0, S, S);
+  fctx.save(); fctx.translate(S / 2, S / 2); fctx.rotate(TH); fctx.translate(-S / 2, -S / 2);
+  fctx.drawImage(mazeCanvas, 0, 0, S, S);
+  for (let i = 0; i < 4; i++) {
+    const E = world.elevs[i], owned = i === state.side;
+    if (myRole === 'runner' && !owned) fctx.fillStyle = '#374151';
+    else fctx.fillStyle = el.open ? '#22c55e' : (owned ? '#22d3ee' : '#ef4444');
+    fctx.fillRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc);
+    if (owned) { fctx.strokeStyle = '#fff'; fctx.lineWidth = 3; fctx.strokeRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc); }
+  }
+  world.pads.forEach((pd) => { fctx.fillStyle = PADCOL[pd.pair]; fctx.beginPath(); fctx.arc(pd.x * sc, pd.y * sc, 8, 0, 7); fctx.fill(); });
+  if (myRole === 'runner') {
+    world.chests.forEach((c, i) => { if (!(state.ch && state.ch[i])) { fctx.fillStyle = '#fbbf24'; fctx.fillRect(c.x * sc - 8, c.y * sc - 7, 16, 14); } });
+    world.potions.forEach((p, i) => { if (!(state.pt && state.pt[i])) { fctx.fillStyle = '#4ade80'; fctx.beginPath(); fctx.arc(p.x * sc, p.y * sc, 6, 0, 7); fctx.fill(); } });
+  }
+  if (state.hint) { fctx.strokeStyle = 'rgba(250,204,21,.9)'; fctx.lineWidth = 3; fctx.setLineDash([8, 6]); fctx.beginPath(); fctx.arc(state.hint.x * sc, state.hint.y * sc, state.hint.r * sc, 0, 7); fctx.stroke(); fctx.setLineDash([]); }
+  if (myRole === 'oni' && state.er && !state.er.c && state.er.x != null) { fctx.fillStyle = '#facc15'; fctx.beginPath(); fctx.arc(state.er.x * sc, state.er.y * sc, 7, 0, 7); fctx.fill(); }
+  for (const e of state.ents) {
+    if (e.role !== myRole || e.al === false) continue;
+    fctx.fillStyle = myRole === 'oni' ? '#f87171' : '#22d3ee'; fctx.beginPath(); fctx.arc(e.x * sc, e.y * sc, 7, 0, 7); fctx.fill();
+  }
+  if (state.ping) { const p = (now % 600) / 600; fctx.strokeStyle = 'rgba(251,191,36,' + (1 - p) + ')'; fctx.lineWidth = 3; fctx.beginPath(); fctx.arc(state.ping.x * sc, state.ping.y * sc, 8 + p * 24, 0, 7); fctx.stroke(); }
+  if (state.rev) { const p = (now % 500) / 500; fctx.strokeStyle = 'rgba(255,60,60,' + (1 - p) + ')'; fctx.lineWidth = 4; fctx.beginPath(); fctx.arc(state.rev.x * sc, state.rev.y * sc, 10 + p * 40, 0, 7); fctx.stroke(); fctx.fillStyle = '#ef4444'; fctx.beginPath(); fctx.arc(state.rev.x * sc, state.rev.y * sc, 9, 0, 7); fctx.fill(); }
+  // 自分の現在地（リアルタイム）
+  if (state.me.al || myRole === 'oni') {
+    const px = meV.x * sc, py = meV.y * sc, pr = (now % 1000) / 1000;
+    fctx.strokeStyle = 'rgba(255,255,255,' + (1 - pr) + ')'; fctx.lineWidth = 3; fctx.beginPath(); fctx.arc(px, py, 10 + pr * 22, 0, 7); fctx.stroke();
+    fctx.fillStyle = myRole === 'oni' ? '#ef4444' : '#3b82f6'; fctx.strokeStyle = '#fff'; fctx.lineWidth = 3;
+    fctx.beginPath(); fctx.arc(px, py, 11, 0, 7); fctx.fill(); fctx.stroke();
+    fctx.fillStyle = '#fff'; fctx.beginPath(); fctx.arc(px, py, 4, 0, 7); fctx.fill();
+    fctx.save(); fctx.translate(px, py); fctx.rotate(-TH);
+    fctx.fillStyle = '#fde047'; fctx.font = 'bold 18px sans-serif'; fctx.textAlign = 'center'; fctx.strokeStyle = '#000'; fctx.lineWidth = 4;
+    fctx.strokeText('▼ あなた', 0, -20); fctx.fillText('▼ あなた', 0, -20);
+    fctx.restore();
+  }
+  fctx.restore();
+  fctx.fillStyle = '#fff'; fctx.font = 'bold 16px sans-serif'; fctx.textAlign = 'left'; fctx.fillText('全体マップ  [M] または クリックで閉じる', 12, 24);
+}
+
+// ================= メインループ =================
+let lastT = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min((performance.now() - last) / 1000, 0.1); last = performance.now();
+  const dt = Math.min((now - lastT) / 1000, 0.1); lastT = now;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VW, VH);
   if (!inGame || !world || !state) return;
@@ -906,24 +1020,239 @@ function frame(now) {
   for (const e of state.ents) { seen[e.id] = 1; if (!views[e.id]) views[e.id] = { x: e.x, y: e.y, ph: 0, fx: 1, mv: 0 }; motion(views[e.id], e, k, dt); }
   for (const id in views) if (!seen[id]) delete views[id];
 
-  const el = state.el, T = world.T, Z = ZOOM(), lightR = cfg.lightR[myRole];
+  const el = state.el, T = world.T, Z = ZOOM(), lightR = cfg.lightR[myRole], ghostR = cfg.ghostR[myRole];
 
+  // 効果音・BGM
+  if (el.open && !prevOpen) beep(880, 0.25, 0.08, 'sine');
+  if (!el.open && prevOpen) beep(80, 0.5, 0.2, 'sawtooth');
+  prevOpen = el.open;
+  if (el.open && el.left <= 8 && !state.bd) { const sec = Math.ceil(el.left); if (sec !== lastSec) { lastSec = sec; beep(450 + (8 - sec) * 90, 0.12, 0.07); } } else lastSec = -1;
+  if (state.bd && now - lastBoardBeep > 380) { lastBoardBeep = now; beep(state.me.board ? 320 : 520, 0.1, 0.09); }
+  if (!state.me.board) bdStart = 0;
+  setBgm(state.bd ? 'rush' : 'game');
+
+  // エレベーター内の専用演出
+  if (state.me.board) { mini.style.display = 'none'; SX = 0; SY = 0; drawCinematic(now); updateHud(); return; }
+  mini.style.display = 'block';
+
+  const danger = el.open && el.left < 4 && !state.bd ? (4 - el.left) / 4 : 0;
+  const sh = danger * (state.me.e ? 4 : 1.5);
+  SX = sh ? (Math.random() - 0.5) * sh * 2 : 0; SY = sh ? (Math.random() - 0.5) * sh * 2 : 0;
+
+  // パス1：ワールド
   withWorld(() => {
     ctx.drawImage(mazeCanvas, 0, 0);
     drawPads(now); drawChests(now); drawPotions(now);
     for (let i = 0; i < 4; i++) { const owned = i === state.side; drawElevator(i, el, now, owned, myRole === 'oni' || owned); }
-    if (state.er && !state.er.c) {
+    if (state.er && !state.er.c) {                                // 地面の消しゴム（MONO風）
       ctx.save(); ctx.translate(state.er.x, state.er.y); ctx.rotate(-TH);
-      drawMono(ctx, 1.15); ctx.restore();
+      ctx.shadowColor = '#93c5fd'; ctx.shadowBlur = 14; drawMono(ctx, 1.15); ctx.restore();
     }
-    for (const e of state.ents) {
-      const v = views[e.id];
-      drawHuman(e, v, 1, false, now);
+    const list = state.ents.slice().sort((a, b) => views[a.id].y - views[b.id].y);
+    for (const e of list) {
+      const v = views[e.id]; let a = 1;
+      if (e.role !== myRole) { const d = Math.hypot(v.x - camV.x, v.y - camV.y); a = clamp((lightR * 0.8 - d) / (lightR * 0.35), 0, 1); if (a <= 0.02) continue; }
+      drawHuman(e, v, a, false, now);
     }
-    if (state.me.al || myRole === 'oni') drawHuman({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, id: socket.id, n: myName, sk: mySkin, hp: state.me.hp }, meV, 1, true, now);
+    if (state.me.al || myRole === 'oni') drawHuman({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, id: socket.id, cr: state.me.cr > 0, n: myName, sk: mySkin, iv: state.me.iv > 0, wcd: state.me.wcd, bs: state.me.boost, hp: state.me.hp }, meV, 1, true, now);
   });
+
+  // 暗闇・靄（壁には遮られない）
+  const cx = VW / 2 + SX, cy = VH / 2 + SY;
+  const R = lightR * Z * (1 + Math.sin(now / 400) * 0.015);
+  const grd = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R);
+  grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(0.6, 'rgba(0,0,0,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0.9)');
+  ctx.fillStyle = grd; ctx.fillRect(0, 0, VW, VH);
+
+  // パス2：闇の中の影
+  withWorld(() => {
+    for (const e of state.ents) {
+      if (e.role === myRole) continue;
+      const v = views[e.id], d = Math.hypot(v.x - camV.x, v.y - camV.y);
+      const up = clamp((d - lightR * 0.5) / (lightR * 0.3), 0, 1), down = clamp((ghostR - d) / (ghostR - lightR * 0.9), 0, 1);
+      const a = 0.62 * up * down;
+      if (a > 0.02) drawSil(e, v, a, now);
+    }
+    if (state.er && !state.er.c && state.er.x != null) {
+      const d = Math.hypot(state.er.x - camV.x, state.er.y - camV.y);
+      if (d > lightR * 0.7) { ctx.save(); ctx.translate(state.er.x, state.er.y); ctx.globalAlpha = 0.35 + 0.25 * Math.sin(now / 200); ctx.fillStyle = '#93c5fd'; ctx.shadowColor = '#93c5fd'; ctx.shadowBlur = 16; ctx.beginPath(); ctx.arc(0, 0, 4, 0, 7); ctx.fill(); ctx.restore(); }
+    }
+    const np = performance.now();
+    fxs = fxs.filter((f) => np - f.t0 < 700);
+    for (const f of fxs) {
+      const kk = (np - f.t0) / 700;
+      ctx.save(); ctx.translate(f.x, f.y); ctx.globalAlpha = 1 - kk;
+      if (f.t === 'stun') {
+        ctx.fillStyle = 'rgba(255,255,220,' + (0.5 * (1 - kk)) + ')'; ctx.beginPath(); ctx.arc(0, 0, GR() * kk, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#fff7b0'; ctx.lineWidth = 6 * (1 - kk) + 1; ctx.stroke();
+      } else if (f.t === 'hit') {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 5 * (1 - kk) + 1;
+        for (let r = 0; r < 8; r++) { const an = r * Math.PI / 4; ctx.beginPath(); ctx.moveTo(Math.cos(an) * (10 + 40 * kk), Math.sin(an) * (10 + 40 * kk)); ctx.lineTo(Math.cos(an) * (24 + 70 * kk), Math.sin(an) * (24 + 70 * kk)); ctx.stroke(); }
+        ctx.fillStyle = 'rgba(255,80,80,' + (0.5 * (1 - kk)) + ')'; ctx.beginPath(); ctx.arc(0, 0, 30 * (1 - kk) + 6, 0, 7); ctx.fill();
+      } else {
+        ctx.strokeStyle = '#d8b4fe'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(0, 0, 50 * kk + 10, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 25 * (1 - kk), 0, 7); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // 突入されたエレベーター：鬼にだけピンポイント公開
+    if (state.rev) {
+      const pr = (now % 500) / 500;
+      ctx.save(); ctx.translate(state.rev.x, state.rev.y);
+      ctx.strokeStyle = 'rgba(255,60,60,' + (1 - pr) + ')'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, 30 + pr * 120, 0, 7); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,40,40,.35)'; ctx.beginPath(); ctx.arc(0, 0, 44, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+  });
+
+  // エレベーターの光
+  if (el.open) {
+    for (let i = 0; i < 4; i++) {
+      if (myRole === 'runner' && i !== state.side) continue;
+      const E = world.elevs[i], p = w2s(E.tx * T + T / 2, E.ty * T + T / 2);
+      const warn = el.left < 3, mid = el.left < 8;
+      const flick = warn ? (Math.floor(now / 90) % 2 ? 1 : 0.35) : mid ? (Math.floor(now / 220) % 2 ? 1 : 0.6) : 1;
+      const col = warn ? '255,70,70' : mid ? '255,190,60' : '110,255,160';
+      const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 200 * Z);
+      gr.addColorStop(0, 'rgba(' + col + ',' + (0.55 * el.door * flick) + ')'); gr.addColorStop(1, 'rgba(' + col + ',0)');
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(0, 0, VW, VH); ctx.restore();
+    }
+  }
+  // 消しゴム所持中：自分のエレベーターへの矢印（水色）
+  if (myRole === 'runner' && state.me.e && state.me.al) {
+    const E = world.elevs[state.side], p = w2s(E.tx * T + T / 2, E.ty * T + T / 2);
+    const ang = Math.atan2(p.y - cy, p.x - cx), dist = Math.hypot(p.x - cx, p.y - cy);
+    if (dist > 130) {
+      ctx.save(); ctx.translate(cx + Math.cos(ang) * 110, cy + Math.sin(ang) * 110); ctx.rotate(ang);
+      ctx.globalAlpha = 0.6 + 0.3 * Math.sin(now / 150); ctx.fillStyle = '#22d3ee';
+      ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -11); ctx.lineTo(-10, 11); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+  }
+  // 消しゴムの誘導インジケーター：画面の端に黄色い三角形（逃げ側・未所持のとき）
+  if (myRole === 'runner' && state.me.al && !state.me.e && state.eh && state.ph === 'play') {
+    const wd = Math.hypot(state.eh.x - camV.x, state.eh.y - camV.y);
+    edgeArrow(state.eh.x, state.eh.y, '#facc15', '#5b4600', '消しゴム 約' + Math.round(wd / T) + 'マス', now);
+  }
+  // 鬼側：突入されたエレベーターの方向（赤）
+  if (myRole === 'oni' && state.rev) edgeArrow(state.rev.x, state.rev.y, '#ef4444', '#450a0a', '突入エレベーター', now);
+  if (danger > 0 && state.me.e) {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 80);
+    const vg = ctx.createRadialGradient(cx, cy, Math.min(VW, VH) * 0.3, cx, cy, Math.max(VW, VH) * 0.7);
+    vg.addColorStop(0, 'rgba(255,0,0,0)'); vg.addColorStop(1, 'rgba(255,0,0,' + (0.35 * danger * (0.5 + pulse)) + ')');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
+  }
+  drawMini(now);
+  if (mapOpen) drawFull(now);
+  updateHud();
 }
+function GR() { return 240; }
+
+function drawMini(now) {
+  const S = mini.width, M = world.map, sc = S / M, T = world.T, el = state.el;
+  mctx.clearRect(0, 0, S, S);
+  mctx.save(); mctx.translate(S / 2, S / 2); mctx.rotate(TH); mctx.translate(-S / 2, -S / 2);
+  mctx.globalAlpha = 0.85; mctx.drawImage(mazeCanvas, 0, 0, S, S); mctx.globalAlpha = 1;
+  for (let i = 0; i < 4; i++) {
+    const E = world.elevs[i], owned = i === state.side;
+    if (myRole === 'runner' && !owned) mctx.fillStyle = '#374151';
+    else mctx.fillStyle = el.open ? '#22c55e' : (owned ? '#22d3ee' : '#ef4444');
+    mctx.fillRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc);
+    if (owned) { mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5; mctx.strokeRect(E.tx * T * sc, E.ty * T * sc, T * sc, T * sc); }
+  }
+  world.pads.forEach((pd) => { mctx.fillStyle = PADCOL[pd.pair]; mctx.beginPath(); mctx.arc(pd.x * sc, pd.y * sc, 3.5, 0, 7); mctx.fill(); });
+  if (myRole === 'runner') {
+    world.chests.forEach((c, i) => { if (!(state.ch && state.ch[i])) { mctx.fillStyle = '#fbbf24'; mctx.fillRect(c.x * sc - 3, c.y * sc - 3, 6, 6); } });
+    world.potions.forEach((p, i) => { if (!(state.pt && state.pt[i])) { mctx.fillStyle = '#4ade80'; mctx.beginPath(); mctx.arc(p.x * sc, p.y * sc, 2.6, 0, 7); mctx.fill(); } });
+  }
+  if (myRole === 'oni' && state.er && !state.er.c && state.er.x != null) { mctx.fillStyle = '#facc15'; mctx.beginPath(); mctx.arc(state.er.x * sc, state.er.y * sc, 4, 0, 7); mctx.fill(); }
+  if (state.hint) { mctx.strokeStyle = 'rgba(250,204,21,.9)'; mctx.lineWidth = 2; mctx.setLineDash([4, 3]); mctx.beginPath(); mctx.arc(state.hint.x * sc, state.hint.y * sc, state.hint.r * sc, 0, 7); mctx.stroke(); mctx.setLineDash([]); }
+  for (const e of state.ents) {                                        // 味方のみ（鬼は逃げ側のミニマップに出ない）
+    if (e.role !== myRole || e.al === false) continue;
+    mctx.fillStyle = myRole === 'oni' ? '#f87171' : '#22d3ee'; mctx.beginPath(); mctx.arc(e.x * sc, e.y * sc, 3, 0, 7); mctx.fill();
+  }
+  if (state.me.al || myRole === 'oni') {
+    mctx.fillStyle = myRole === 'oni' ? '#ef4444' : '#3b82f6'; mctx.beginPath(); mctx.arc(meV.x * sc, meV.y * sc, 4, 0, 7); mctx.fill();
+    mctx.strokeStyle = '#fff'; mctx.lineWidth = 1; mctx.stroke();
+  }
+  if (state.ping) { const p = (now % 600) / 600; mctx.strokeStyle = 'rgba(251,191,36,' + (1 - p) + ')'; mctx.lineWidth = 2; mctx.beginPath(); mctx.arc(state.ping.x * sc, state.ping.y * sc, 4 + p * 12, 0, 7); mctx.stroke(); }
+  if (state.rev) {                                                     // 突入エレベーターをピンポイント表示（鬼のみ）
+    const p = (now % 500) / 500;
+    mctx.strokeStyle = 'rgba(255,60,60,' + (1 - p) + ')'; mctx.lineWidth = 2.5; mctx.beginPath(); mctx.arc(state.rev.x * sc, state.rev.y * sc, 5 + p * 22, 0, 7); mctx.stroke();
+    mctx.fillStyle = '#ef4444'; mctx.beginPath(); mctx.arc(state.rev.x * sc, state.rev.y * sc, 5, 0, 7); mctx.fill();
+  }
+  mctx.restore();
+}
+
+function updateHud() {
+  const s = state, el = s.el;
+  const b = $('banner'), pb = $('placeBtn'), pt = $('ptimer'), ib = $('itemBtn'), hb = $('hpbar'), pr = $('prompt');
+  pb.style.display = 'none'; pt.style.display = 'none'; ib.style.display = 'none'; pr.style.display = 'none';
+  const playing = s.s === 'playing', pad = settings.mode === 'ipad';
+  const placing = s.ph === 'place' && playing;
+  b.style.display = 'none';
+  if (placing) {
+    const total = world.placeTime || 30, sec = Math.ceil(s.pl);
+    pt.style.display = 'block';
+    $('ptNum').textContent = sec;
+    $('ptFill').style.width = (s.placed ? 5 : clamp(s.pl / total * 100, 0, 100)) + '%';
+    pt.classList.toggle('hot', !s.placed && s.pl <= 5);
+    if (!s.placed && s.pl <= 5 && sec !== lastPlaceSec) { lastPlaceSec = sec; beep(700, 0.1, 0.06); }
+    if (myRole === 'oni') {
+      $('ptLab').textContent = s.placed ? '設置完了…まもなくスタート！' : '👹 消しゴム設置時間 ─ 好きな場所まで歩いて SPACE で設置';
+      if (!s.placed && !pad) pb.style.display = 'block';
+    } else $('ptLab').textContent = s.placed ? 'まもなくスタート！' : '🏃 鬼が消しゴムを隠している…（スタートまで待機）';
+  } else if (myRole === 'oni' && s.bd && playing) {
+    b.style.display = 'block'; b.style.color = Math.floor(performance.now() / 160) % 2 ? '#ff5a5a' : '#fff';
+    b.innerHTML = '🚨 逃げ側がエレベーターに突入！ 鬼 1.5倍速で急行<br><span style="font-size:26px">' + Math.max(0, s.bd.left).toFixed(1) + ' 秒</span>';
+  } else if (myRole === 'runner' && !s.me.al && playing) { b.style.display = 'block'; b.style.color = '#fca5a5'; b.textContent = '力尽きた…仲間を観戦中'; }
+  else if (myRole === 'oni' && s.me.st && playing) { b.style.display = 'block'; b.style.color = '#d1d5db'; b.textContent = s.me.rs ? 'リスポーン硬直中… SPACE でスポーンへテレポート可' : '硬直中…'; }
+
+  // 行動ヒント
+  if (playing && s.ph === 'play' && !s.me.board) {
+    const spk = pad ? '「SPACE」ボタン' : '[SPACE]';
+    if (s.me.np >= 0 && !(myRole === 'oni' && s.me.st)) { pr.style.display = 'block'; pr.textContent = s.me.wcd > 0 ? '🌀 ワープ待機 ' + Math.ceil(s.me.wcd) + '秒' : spk + ' でワープ'; }   // ワープ最優先
+    else if (myRole === 'runner' && s.me.nc) { pr.style.display = 'block'; pr.textContent = spk + ' で宝箱を開ける'; }
+  }
+  // 逃げ側：HPバー
+  if (myRole === 'runner' && s.me.al && playing) {
+    hb.style.display = 'block';
+    $('hpLab').textContent = '❤ HP ' + s.me.hp + '%';
+    $('hpFill').style.width = s.me.hp + '%';
+    $('hpFill').style.background = s.me.hp > 50 ? 'linear-gradient(90deg,#22c55e,#86efac)' : 'linear-gradient(90deg,#ef4444,#fca5a5)';
+  } else hb.style.display = 'none';
+
+  // アイテム（PC：ボタン／iPad：Qボタン）
+  const it = myRole === 'runner' && s.me.al && s.ph === 'play' && playing ? s.me.item : null;
+  if (it && it !== 'stun' && !pad) { ib.style.display = 'block'; ib.textContent = ITEM[it].i + ' ' + ITEM[it].n + '（Q）'; }
+  $('tbQ').textContent = it ? ITEM[it].i : 'Q';
+  $('tbSpace').innerHTML = s.me.np >= 0 && s.ph === 'play' ? 'ワープ' : s.ph === 'place' && myRole === 'oni' ? '設置' : myRole === 'oni' ? (s.me.tp > 0 && !s.me.rs ? 'テレポ<br>' + Math.ceil(s.me.tp) : 'テレポ') : (s.me.nc ? '開ける' : 'SPACE');
+  const crOn = myRole === 'runner' && !(world.rules && world.rules.crouch === false);
+  $('tbCrouch').style.display = crOn ? 'flex' : 'none';
+  $('tbCrouch').innerHTML = s.me.cr > 0 ? '透明<br>' + Math.ceil(s.me.cr) : s.me.crCd > 0 ? 'しゃがみ<br>' + Math.ceil(s.me.crCd) : 'しゃがみ';
+
+  const t = Math.max(0, Math.ceil(s.t)), mm = Math.floor(t / 60), ss = String(t % 60).padStart(2, '0');
+  let h = '<b style="color:' + (myRole === 'oni' ? '#f87171' : '#60a5fa') + '">' + (myRole === 'oni' ? '👹 鬼側' : '🏃 逃げ側') + '</b> 残り ' + mm + ':' + ss;
+  h += '<br>生存している逃げ側：' + s.n;
+  if (myRole === 'runner') h += '<br>消しゴム：' + (s.me.e ? '<b style="color:#93c5fd">所持中！自分のエレベーターへ</b>' : s.er && s.er.c ? '誰かが所持' : '探索中…');
+  else h += '<br>消しゴム：' + (!s.placed ? '未設置' : s.er && s.er.c ? '奪われた！' : '設置中');
+  h += '<br>エレベーター：' + (el.open ? '<b style="color:' + (el.left < 3 ? '#f87171' : el.left < 8 ? '#fbbf24' : '#4ade80') + '">OPEN 残り ' + el.left.toFixed(1) + '秒</b>' : '<span style="color:#f87171">CLOSED</span>');
+  if (myRole === 'runner') h += '<br>アイテム：' + (s.me.item ? ITEM[s.me.item].i + ' ' + ITEM[s.me.item].n + (s.me.item === 'stun' ? '（自動）' : '') : 'なし');
+  if (myRole === 'oni' && s.ph === 'play') h += '<br>テレポート：' + (s.me.rs || s.me.tp <= 0 ? '<b style="color:#c084fc">SPACEで使用可</b>' : 'あと ' + Math.ceil(s.me.tp) + ' 秒');
+  if (s.me.boost > 0) h += '<br><span style="color:#fde047">👟 スピードアップ ' + s.me.boost.toFixed(1) + 's</span>';
+  if (s.me.iv > 0) h += '<br><span style="color:#c4b5fd">👻 透明化 ' + s.me.iv.toFixed(1) + 's</span>';
+  if (s.me.wcd > 0) h += '<br><span style="color:#c084fc">🌀 ワープ待機 ' + s.me.wcd.toFixed(1) + 's</span>';
+  if (myRole === 'runner' && !(world.rules && world.rules.crouch === false)) {
+    h += s.me.cr > 0 ? '<br><span style="color:#a7f3d0">🫥 しゃがみ中（透明）' + s.me.cr.toFixed(1) + 's</span>'
+      : s.me.crCd > 0 ? '<br>しゃがみ CT ' + s.me.crCd.toFixed(1) + 's' : '<br>しゃがみ：<b style="color:#a7f3d0">使用可</b>（' + (pad ? 'ボタン' : 'Shift / C') + '）';
+  }
+  h += '<br><span style="font-size:12px;color:#cbd5e1">[M] 全体マップ</span>';
+  hud.innerHTML = h;
+}
+refreshSettingsUI();
 requestAnimationFrame(frame);
+
 </script>
 </body>
 </html>
+```[cite: 5]
+
