@@ -30,7 +30,7 @@ const MAX_HP = 100, HIT_DMG = 50, HEAL = 50;
 const INVULN = 3, START_STUN = 2, ONI_RESPAWN = 5, MATCH_TIME = 300;
 const PLACE_TIME = 30, PLACE_MIN = 300, HINT_AFTER = 45;
 const WARP_CD = 5, WARP_R = 28;
-const BOOST_SEC = 10, BOOST_MUL = 1.4;
+const BOOST_SEC = 10, BOOST_MUL = 1.4, INVIS_SEC = 10;
 const GRENADE_STUN = 8, GRENADE_R = 240;                // 自動スタン：半径3ブロック・8秒
 const CHEST_RESPAWN = 45, POTION_RESPAWN = 40, POTION_COUNT = 3;
 const ONI_TP_CD = 30;
@@ -50,8 +50,8 @@ function cleanRules(r) {
   };
 }
 const SKIN_COUNT = 8, RESULT_WAIT = 15000, MAX_PLAYERS = 8;
-const ITEMS = ['stun', 'boots'];                         // 透明化アイテムを削除
-const ITEM_NAME = { stun: 'スタングレネード', boots: 'スピードブーツ' };
+const ITEMS = ['stun', 'boots', 'invis'];
+const ITEM_NAME = { stun: 'スタングレネード', boots: 'スピードブーツ', invis: '透明化' };
 
 const cleanSkin = (v) => { v = parseInt(v, 10); return v >= 0 && v < SKIN_COUNT ? v : 0; };
 const elevIndexAt = (tx, ty) => { for (let i = 0; i < 4; i++) if (ELEVS[i].tx === tx && ELEVS[i].ty === ty) return i; return -1; };
@@ -59,7 +59,7 @@ const elevCenter = (i) => ({ x: ELEVS[i].tx * T + T / 2, y: ELEVS[i].ty * T + T 
 const elevFront = (i) => ({ x: (ELEVS[i].tx + ELEVS[i].dx) * T + T / 2, y: (ELEVS[i].ty + ELEVS[i].dy) * T + T / 2 });
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-// ================= 迷路生成 =================
+// ================= 迷路生成（毎回ランダム・全通路が必ず連結）=================
 function generateMaze() {
   const g = [];
   for (let y = 0; y < N; y++) g.push(new Array(N).fill(1));
@@ -546,10 +546,14 @@ function step(g, dt) {
       if (e.role === 'oni' && e.stun > 0) continue;
       moveByInput(g, e, dt);
     } else if (e.stun <= 0) {
-      // ▼▼▼ 鬼の挙動をもとに戻す（エレベーター突入時は常に急行する） ▼▼▼
-      if (g.board) cpuMove(g, e, dt, elevFront(g.board.side), true);
-      else cpuWander(g, e, dt);
-      // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+      // ▼▼▼ 【修正】エレベーター突入中(g.board)であっても、突入したプレイヤーがしゃがんでいる場合は追わない（巡回する） ▼▼▼
+      const carrierEnt = g.board ? g.ents.find((x) => x.id === g.board.id) : null;
+      if (g.board && !(carrierEnt && carrierEnt.crouch > 0)) {
+        cpuMove(g, e, dt, elevFront(g.board.side), true); // 突入を察知して急行
+      } else {
+        cpuWander(g, e, dt);                             // プレイヤーを追跡せず、迷路内をうろうろ巡回
+      }
+      // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     }
   }
   if (carrier) { er.x = carrier.x; er.y = carrier.y; }
@@ -612,16 +616,27 @@ function step(g, dt) {
       b.left -= dt;
       el.door = b.d0 * Math.max(0, b.left / b.total);
       const c = elevCenter(b.side);
-      const arrived = g.ents.find((o) => o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - c.x, o.y - c.y) < BOARD_CATCH);
-      if (arrived) {
-        const f = elevFront(b.side);
-        r.board = false; r.x = f.x; r.y = f.y; g.board = null;
-        hurtRunner(g, r, arrived);
-        ev(g, '⚠ ドアが閉まる前に鬼が追いついた！');
-      } else if (b.left <= 0) {
-        let nd = 9999;
-        for (const o of g.ents) if (o.role === 'oni') nd = Math.min(nd, Math.hypot(o.x - c.x, o.y - c.y));
-        g.status = 'runwin'; g.slide = nd; return;
+      // プレイヤーがしゃがんでいる間はCPU鬼が追ってこない（到達判定も行わない、または到達できない）ようにする場合
+      // carrierEnt がしゃがみ中のときは鬼の到着阻止を無効にする
+      if (!(r.crouch > 0)) {
+        const arrived = g.ents.find((o) => o.role === 'oni' && o.stun <= 0 && Math.hypot(o.x - c.x, o.y - c.y) < BOARD_CATCH);
+        if (arrived) {
+          const f = elevFront(b.side);
+          r.board = false; r.x = f.x; r.y = f.y; g.board = null;
+          hurtRunner(g, r, arrived);
+          ev(g, '⚠ ドアが閉まる前に鬼が追いついた！');
+        } else if (b.left <= 0) {
+          let nd = 9999;
+          for (const o of g.ents) if (o.role === 'oni') nd = Math.min(nd, Math.hypot(o.x - c.x, o.y - c.y));
+          g.status = 'runwin'; g.slide = nd; return;
+        }
+      } else {
+        // しゃがみ突入時はそのままカウントダウンを進めて脱出成功させる
+        if (b.left <= 0) {
+          let nd = 9999;
+          for (const o of g.ents) if (o.role === 'oni') nd = Math.min(nd, Math.hypot(o.x - c.x, o.y - c.y));
+          g.status = 'runwin'; g.slide = nd; return;
+        }
       }
     }
   }
@@ -686,7 +701,7 @@ function useItem(g, e) {
   if (e.item === 'stun') { evTo(e.id, '💫 スタングレネードは鬼が近づくと自動で発動する'); return; }
   const it = e.item; e.item = null;
   if (it === 'boots') { e.boost = BOOST_SEC; evTo(e.id, '👟 スピードアップ！'); }
-  // 透明化アイテムの処理を削除
+  else if (it === 'invis') { e.invis = INVIS_SEC; evTo(e.id, '👻 透明化！鬼から完全に見えない'); }
 }
 
 function doCrouch(g, e) {
@@ -962,3 +977,4 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log('Server listening on ' + PORT));
+
