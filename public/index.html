@@ -264,7 +264,7 @@
     <div style="font-weight:800;margin-top:6px">デバイス</div>
     <div class="seg" style="margin:8px 0 18px">
       <button class="btn gray" id="modePc">PCモード<br><small>キーボード操作</small></button>
-      <button class="btn gray" id="modePad">📱iPadモード<br><small>画面上のパッド＋ボタン</small></button>
+      <button class="btn gray" id="modePad">iPadモード<br><small>画面上のパッド＋ボタン</small></button>
     </div>
     <div style="text-align:center"><button class="btn yellow" id="setClose" style="font-size:20px;padding:12px 36px">閉じる</button></div>
   </div>
@@ -508,7 +508,7 @@ function renderLobby() {
   $('readyBtn').textContent = me.ready ? '準備解除' : '準備OK ✓';
   $('readyBtn').classList.toggle('active', !!me.ready);
   $('rulesBtn').style.display = soloLobbyHide() ? 'none' : '';
-  $('rulesBtn').textContent = host ? '⚙ ルール設定' : '📋 ルール確認';
+  $('rulesBtn').textContent = host ? '⚙ ルール設定' : 'ルール確認';
   $('lnote').textContent = d.state === 'playing' ? '試合中です。終了までお待ちください。'
     : host ? '準備OK ' + ready + ' / ' + total + ' 鬼を選んだ人がいなければCPUの鬼が参加します。'
     : me.ready ? 'ホストの開始を待っています…' : '準備ができたら「準備OK」を押してください';
