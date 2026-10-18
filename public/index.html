@@ -242,8 +242,8 @@
     <div class="row"><span style="width:84px">SE音量</span><input type="range" id="setSe" min="0" max="100"><span class="val" id="vSe"></span></div>
     <div style="font-weight:800;margin-top:6px">デバイス</div>
     <div class="seg" style="margin:8px 0 18px">
-      <button class="btn gray" id="modePc">PCモード<br><small>キーボード操作</small></button>
-      <button class="btn gray" id="modePad">iPadモード<br><small>画面上のパッド＋ボタン</small></button>
+      <button class="btn gray" id="modePc">🖥 PCモード<br><small>キーボード操作</small></button>
+      <button class="btn gray" id="modePad">📱 iPadモード<br><small>画面上のパッド＋ボタン</small></button>
     </div>
     <div style="text-align:center"><button class="btn yellow" id="setClose" style="font-size:20px;padding:12px 36px">閉じる</button></div>
   </div>
@@ -270,8 +270,8 @@
   </div>
   <div class="center">
     <input id="name" class="field" maxlength="12" placeholder="プレイヤー名">
-    <button id="btnCreate" class="btn yellow big tbtn"><span class="ic"></span><span>ルームを作る<small>友達と遊ぶ ─ 5桁のルームコードを発行</small></span></button>
-    <button id="btnSolo" class="btn blue big tbtn"><span class="ic"></span><span>CPUと戦う<small>ひとりで今すぐスタート</small></span></button>
+    <button id="btnCreate" class="btn yellow big tbtn"><span class="ic">🏠</span><span>ルームを作る<small>友達と遊ぶ ─ 5桁のルームコードを発行</small></span></button>
+    <button id="btnSolo" class="btn blue big tbtn"><span class="ic">🤖</span><span>CPUと戦う<small>ひとりで今すぐスタート</small></span></button>
     <div class="joinrow">
       <input id="code" class="field" inputmode="numeric" maxlength="5" placeholder="12345">
       <button id="btnJoin" class="btn gray">コードで参加</button>
@@ -1317,7 +1317,7 @@ function renderFriends() {
     const row = document.createElement('div'); row.className = 'fr-item';
     const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = f.name;
     const st = document.createElement('span'); st.className = 'st';
-    st.textContent = !f.online ? '⚫ オフライン' : f.room ? (f.state === 'playing' ? '試合中 [' + f.room + ']' : 'ロビー [' + f.room + ']') : 'オンライン';
+    st.textContent = !f.online ? '⚫ オフライン' : f.room ? (f.state === 'playing' ? '🎮 試合中 [' + f.room + ']' : '🟡 ロビー [' + f.room + ']') : '🟢 オンライン';
     row.append(nm, st);
     if (f.online && f.room) { const j = document.createElement('button'); j.className = 'btn blue mini'; j.textContent = '参加'; j.onclick = () => { initAudio(); socket.emit('joinFriend', { name: f.name, skin: skinSel }); }; row.appendChild(j); }
     if (f.online && lobbyData && !inGame) { const v = document.createElement('button'); v.className = 'btn yellow mini'; v.textContent = '招待'; v.onclick = () => socket.emit('invite', { name: f.name }); row.appendChild(v); }
