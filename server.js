@@ -27,7 +27,7 @@ const RUSH_MUL = 1.5;                                   // エレベーター突
 const ELEV_OPEN_SEC = 20, CLOSE_PHASE = 8, DOOR_PASS = 0.15;
 const BOARD_TIME = 4, BOARD_CATCH = 110;                // 突入後に扉が閉まるまで／鬼がここまで来たら阻止
 const MAX_HP = 100, HIT_DMG = 50, HEAL = 50;
-const INVULN = 3, START_STUN = 2, ONI_RESPAWN = 5, MATCH_TIME = 300;
+const RUNNER_STUN = 1.5, INVULN = 3, START_STUN = 2, ONI_RESPAWN = 5, MATCH_TIME = 300;
 const PLACE_TIME = 30, PLACE_MIN = 300, HINT_AFTER = 45;
 const WARP_CD = 5, WARP_R = 28;
 const BOOST_SEC = 10, BOOST_MUL = 1.4, INVIS_SEC = 10;
@@ -313,11 +313,9 @@ function startGame(room) {
     elev: { open: false, left: 0, door: 0 }
   };
   setupSpots(g);
-  const sides = shuffle([0, 1, 2, 3]);
-  let si = 0;
-  for (const p of list) if (p.assigned === 'runner') addEnt(g, p.id, p.name, 'runner', false, sides[si++ % 4], p.skin);
-  for (const p of list) if (p.assigned === 'oni') addEnt(g, p.id, p.name, 'oni', false, sides[si++ % 4], p.skin);
-  if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu1', 'CPU鬼', 'oni', true, sides[si++ % 4], 0);
+  for (const p of list) if (p.assigned === 'runner') addEnt(g, p.id, p.name, 'runner', false, 0, p.skin);
+  for (const p of list) if (p.assigned === 'oni') addEnt(g, p.id, p.name, 'oni', false, 2, p.skin);
+  if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu1', 'CPU鬼', 'oni', true, 2, 0);
 
   room.game = g; room.state = 'playing';
   for (const e of g.ents) if (!e.cpu) {
@@ -385,6 +383,7 @@ function placeEraser(g, x, y) {
   const er = g.eraser;
   er.x = x; er.y = y; er.home = { x, y }; er.placed = true; er.carried = false; er.cool = 0;
   g.placeLeft = 1.5;
+  for (const o of g.ents) if (o.role === 'oni') { o.x = o.spawn.x; o.y = o.spawn.y; o.next = null; o.kb = null; }
   ev(g, '📍 消しゴムが迷路のどこかに設置された…');
 }
 function dropEraser(g, holder) {
@@ -448,7 +447,7 @@ function advanceKnockback(e, dt) {
 }
 function hurtRunner(g, r, oni) {
   r.hp = Math.max(0, r.hp - HIT_DMG);
-  r.invuln = INVULN;
+  r.invuln = INVULN; r.stun = Math.max(r.stun, RUNNER_STUN); r.resp = false;
   if (r.hasEraser) dropEraser(g, r);
   fxNear(g, 'hit', r.x, r.y);
   if (oni) { startKnockback(g, oni, r); oni.stun = ONI_RESPAWN; oni.resp = true; }
@@ -543,7 +542,7 @@ function step(g, dt) {
     if (!e.alive) continue;
     if (e.kb) { advanceKnockback(e, dt); continue; }
     if (!e.cpu) {
-      if (e.role === 'oni' && e.stun > 0) continue;
+      if (e.stun > 0) continue;
       moveByInput(g, e, dt);
     } else if (e.stun <= 0) {
       // ▼▼▼ 【修正】エレベーター突入中(g.board)であっても、突入したプレイヤーがしゃがんでいる場合は追わない（巡回する） ▼▼▼
@@ -792,6 +791,18 @@ io.on('connection', (socket) => {
     addPlayer(room, socket, accName(socket.id) || (d && d.name), 'auto', d && d.skin);
     sendLobby(room);
   });
+  socket.on('quick', (d) => {
+    leaveRoom(socket.id);
+    let room = [...rooms.values()].find((r) => r.quick && !r.solo && r.state === 'lobby' && r.players.size < MAX_PLAYERS);
+    if (!room) {
+      room = makeRoom(socket, false);
+      if (!room) return;
+      room.quick = true;
+      room.qt = setTimeout(() => { if (room.state === 'lobby' && room.players.size) startGame(room); }, 10000);
+    }
+    addPlayer(room, socket, accName(socket.id) || (d && d.name), 'auto', d && d.skin);
+    sendLobby(room);
+  });
   socket.on('solo', (d) => {
     leaveRoom(socket.id);
     const room = makeRoom(socket, true);
@@ -977,4 +988,3 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log('Server listening on ' + PORT));
-
