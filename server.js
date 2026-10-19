@@ -1097,6 +1097,8 @@ io.on('connection', (socket) => {
     reply('accMsg', true, '「' + acc.name + '」でログインした');
   });
 
+  socket.on('logout', () => { detach(socket); sendProfile(socket); });
+
   // ---- ショップ・称号 ----
   socket.on('buySkin', (d) => {
     const acc = accOf(socket.id), id = parseInt(d && d.id, 10);
