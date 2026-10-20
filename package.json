@@ -1,6 +1,6 @@
 {
   "name": "eraser-elevator-game",
-  "version": "8.0.0",
+  "version": "9.0.0",
   "description": "消しゴム奪取＆エレベーター脱出（鬼 vs 逃げ 非対称オンライン対戦）",
   "main": "server.js",
   "scripts": {
