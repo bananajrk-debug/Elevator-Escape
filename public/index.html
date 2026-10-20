@@ -285,6 +285,22 @@
   .tmenu { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
   #lobby .top-left { display: flex; flex-wrap: wrap; gap: 8px; max-width: calc(100vw - 400px); }
   .sk.lock { opacity: .55; filter: grayscale(.6); }
+
+  /* ===== v10：ロード画面・髪型/エモート・オンラインマッチ ===== */
+  #load { z-index: 60; background: linear-gradient(#5ec8ff, #c8f1ff 62%, #ffe8a8); flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 11vh; }
+  #loadCv { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #loadTitle { position: relative; font-size: clamp(34px, 9vmin, 78px); font-weight: 900; font-style: italic; color: #fff; -webkit-text-stroke: 4px #2f6fe0; paint-order: stroke fill; text-shadow: 0 7px 0 #1b4aa8; letter-spacing: 4px; }
+  #loadSub { position: relative; margin-top: 6px; font-weight: 900; color: #1b3a7a; font-size: clamp(14px, 2.6vmin, 22px); text-shadow: 0 2px 0 #fff8; }
+  .ldbar { position: relative; margin-top: 16px; width: min(70vw, 440px); height: 22px; background: rgba(0,0,0,.25); border: 3px solid #fff; border-radius: 14px; overflow: hidden; }
+  #ldFill { display: block; height: 100%; width: 0; background: repeating-linear-gradient(45deg, #ffd23f 0 12px, #ff9f1c 12px 24px); }
+  #ldCancel { position: relative; margin-top: 18px; font-size: 18px; padding: 12px 30px; }
+  #emoBtn { position: fixed; z-index: 14; display: none; width: clamp(40px, 6.5vmin, 52px); height: clamp(40px, 6.5vmin, 52px); font-size: clamp(18px, 3.2vmin, 24px); padding: 0; border-radius: 50%;
+            left: calc(env(safe-area-inset-left, 0px) + 12px + clamp(40px, 6.5vmin, 52px) + 8px); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); }
+  body.scr-game #emoBtn { display: block; }
+  body.ipad.scr-game #emoBtn { bottom: calc(var(--padB) + var(--dp) + 2vmin); left: calc(var(--padL) + clamp(40px, 6.5vmin, 52px) + 8px); }
+  .emo-prev { font-size: 84px; height: 130px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.22); border-radius: 10px; animation: emoBob 1.2s ease-in-out infinite; }
+  @keyframes emoBob { 50% { transform: translateY(-8px) scale(1.12); } }
+  .tabs { flex-wrap: wrap; } .tabs .btn { min-width: 30%; }
 </style>
 </head>
 <body>
@@ -295,6 +311,8 @@
 <button id="gear" class="btn gray" aria-label="設定">⚙</button>
 <button id="menuBtn" class="btn gray" aria-label="メニュー">☰</button>
 <button id="chatBtn" class="btn gray" aria-label="スタンプ">💬</button>
+<button id="emoBtn" class="btn gray" aria-label="エモート">💃</button>
+<div id="load" class="overlay"><canvas id="loadCv"></canvas><div id="loadTitle">LOADING...</div><div id="loadSub"></div><div class="ldbar"><i id="ldFill"></i></div><button id="ldCancel" class="btn red" style="display:none">キャンセル</button></div>
 <div id="inviteBox"></div>
 <div id="chatPal"></div>
 <div id="hpbar"><div class="hp-lab" id="hpLab"></div><div class="hp-track"><div id="hpFill"></div></div></div>
@@ -314,8 +332,8 @@
     <div class="row"><span style="width:84px">SE音量</span><input type="range" id="setSe" min="0" max="100"><span class="val" id="vSe"></span></div>
     <div style="font-weight:800;margin-top:6px">デバイス</div>
     <div class="seg" style="margin:8px 0 18px">
-      <button class="btn gray" id="modePc">🖥 PCモード<br><small>キーボード操作</small></button>
-      <button class="btn gray" id="modePad">📱 iPadモード<br><small>画面上のパッド＋ボタン</small></button>
+      <button class="btn gray" id="modePc">PCモード<br><small>キーボード操作</small></button>
+      <button class="btn gray" id="modePad">iPadモード<br><small>画面上のパッド＋ボタン</small></button>
     </div>
     <div style="text-align:center"><button class="btn yellow" id="setClose" style="font-size:20px;padding:12px 36px">閉じる</button></div>
   </div>
@@ -343,8 +361,9 @@
   </div>
   <div class="center">
     <input id="name" class="field" maxlength="12" placeholder="プレイヤー名">
-    <button id="btnCreate" class="btn yellow big tbtn"><span class="ic">🏠</span><span>ルームを作る<small>友達と遊ぶ ─ 5桁のルームコードを発行</small></span></button>
-    <button id="btnSolo" class="btn blue big tbtn"><span class="ic">🤖</span><span>CPUと戦う<small>ひとりで今すぐスタート</small></span></button>
+    <button id="btnCreate" class="btn yellow big tbtn"><span class="ic"></span><span>ルームを作る<small>友達と遊ぶ ─ 5桁のルームコードを発行</small></span></button>
+    <button id="btnSolo" class="btn blue big tbtn"><span class="ic"></span><span>CPUと戦う<small>ひとりで今すぐスタート</small></span></button>
+    <button id="btnQuick" class="btn green big tbtn" style="background:#22c55e;box-shadow:0 6px 0 #15803d,0 10px 18px rgba(0,0,0,.4)"><span class="ic">🌏</span><span>オンラインマッチ<small>全国のプレイヤーと自動マッチング（役割はランダム）</small></span></button>
     <div class="solo-opt">🏢 CPU戦の階数
       <select id="soloFloors"><option value="1">1階</option><option value="3" selected>3階</option><option value="5">5階</option></select>
       <span style="font-size:12px;opacity:.85">クリアで 15 EG</span></div>
@@ -424,7 +443,7 @@
 <div id="shop" class="overlay">
   <div class="panel wide60">
     <div class="sh-head"><h2 id="shTitle">🛒 スキンショップ</h2><span id="egBal" class="egchip">🪙 0 EG</span><button class="btn gray mini" id="shopClose">✕</button></div>
-    <div class="tabs" style="margin-top:10px"><button class="btn yellow" id="stShop">🛒 ショップ</button><button class="btn gray" id="stQuest">📜 クエスト</button><button class="btn gray" id="stTitle">🏅 称号</button></div>
+    <div class="tabs" style="margin-top:10px"><button class="btn yellow" id="stShop">🛒 ショップ</button><button class="btn gray" id="stQuest">📜 クエスト</button><button class="btn gray" id="stHair">💇 髪型</button><button class="btn gray" id="stEmote">🎭 エモート</button><button class="btn gray" id="stTitle">🏅 称号</button></div>
     <div id="shopBody" class="sh-body"></div>
     <div id="shopMsg" class="msg"></div>
   </div>
@@ -470,6 +489,7 @@ const setScreen = (s) => { document.body.className = 'scr-' + s + (settings.mode
 
 let world = null, cfg = null, mazeCanvas = null, state = null, inGame = false;
 let myRole = 'runner', myName = '', lobbyData = null, TH = 0, mySkin = 0, skinSel = 0, soloMode = false;
+const emoteFx = {}; let hairSel = 0, emoteSel = 0, myHair = 0;
 let resultShown = false, ended = false, views = {}, camV = null, meV = null, fxs = [], mapOpen = false;
 let bdStart = 0, lastSec = -1, prevOpen = false, lastPlaceSec = -1, lastBoardBeep = 0, SX = 0, SY = 0;
 let VW = innerWidth, VH = innerHeight, DPR = 1, vs = 1;
@@ -732,12 +752,13 @@ $('itemBtn').onclick = doItem;
 const keys = { u: 0, d: 0, l: 0, r: 0 };
 const kmap = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
 function sendInput() {                                    // 画面基準の入力 → ワールド基準へ回転して送信
+  if (mapOpen) { socket.emit('input', { u: false, d: false, l: false, r: false }); return; }   // 全体マップ閲覧中は移動入力を無効化（その場に立ち止まる）
   const sx = keys.r - keys.l, sy = keys.d - keys.u;
   const c = Math.round(Math.cos(TH)), s = Math.round(Math.sin(TH));
   const wx = sx * c + sy * s, wy = -sx * s + sy * c;
   socket.emit('input', { u: wy < 0, d: wy > 0, l: wx < 0, r: wx > 0 });
 }
-function toggleMap() { if (!inGame) return; mapOpen = !mapOpen; fm.style.display = mapOpen ? 'block' : 'none'; }
+function toggleMap() { if (!inGame) return; mapOpen = !mapOpen; fm.style.display = mapOpen ? 'block' : 'none'; sendInput(); }
 fm.addEventListener('click', toggleMap);
 addEventListener('keydown', (e) => {
   if (e.target && e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
@@ -940,7 +961,9 @@ function drawHuman(e, v, alpha, isMe, now) {
   const bob = v.mv ? Math.abs(Math.cos(v.ph || 0)) * 1.6 : Math.sin(now / 420) * 0.6;
   const skin = isOni ? (e.st ? '#9ca3af' : '#f87171') : '#f5cfa8';
   const shirt = isOni ? (e.st ? '#6b7280' : sk.o) : sk.c;
-  ctx.save(); ctx.scale(fx, e.cr ? 0.78 : 1); ctx.translate(0, -bob + (e.cr ? 4 : 0));
+  const emo = (!e.noLabel && emoteFx[e.id] && performance.now() - emoteFx[e.id].t0 < 2500) ? emoteFx[e.id] : null;
+  const emoJump = emo ? Math.abs(Math.sin((performance.now() - emo.t0) / 140)) * 9 : 0;
+  ctx.save(); ctx.scale(fx, e.cr ? 0.78 : 1); ctx.translate(0, -bob + (e.cr ? 4 : 0) - emoJump);
   // 脚
   const pants = isOni ? '#facc15' : '#334155';
   limb(-4, 1, -4 + sw * 6, 12, 5, pants); limb(4, 1, 4 - sw * 6, 12, 5, pants);
@@ -970,7 +993,7 @@ function drawHuman(e, v, alpha, isMe, now) {
     ctx.strokeStyle = '#111'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-6, -29); ctx.lineTo(-1, -27); ctx.moveTo(7, -29); ctx.lineTo(2, -27); ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-2, -20); ctx.lineTo(-1, -17); ctx.lineTo(0, -20); ctx.moveTo(2, -20); ctx.lineTo(3, -17); ctx.lineTo(4, -20); ctx.fill();
   } else {
-    ctx.fillStyle = sk.h; ctx.beginPath(); ctx.arc(0, -26, 9.6, Math.PI * 0.95, Math.PI * 2.05); ctx.fill();
+    drawHair(e.hr | 0, sk.h);
     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-2, -24.5, 1.4, 0, 7); ctx.arc(4, -24.5, 1.4, 0, 7); ctx.fill();
   }
   ctx.restore();
@@ -991,6 +1014,7 @@ function drawHuman(e, v, alpha, isMe, now) {
     ctx.fillText(e.n || '', 0, e.ti ? 41 : 28);
     if (e.ti) { ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#fde68a'; ctx.fillText('『' + e.ti + '』', 0, 29); }
   }
+  if (emo) drawEmoteIcon(emo, e);
   const bb = e.noLabel ? null : bubbles[e.id];                // スタンプ・定型文のフキダシ
   if (bb && performance.now() - bb.t0 < 3000) {
     const txt = CHATS[bb.i];
@@ -1181,7 +1205,7 @@ function drawStageChar(p, x, y, s, now, isMe, i, host, cx) {
   c.restore();
   const ctx0 = ctx, th0 = TH; ctx = c; TH = 0;                                 // 既存の人型描画を再利用
   c.save(); c.translate(x, y); c.scale(s, s);
-  drawHuman({ role: p.role === 'oni' ? 'oni' : 'runner', al: true, sk: p.skin, hp: 100, noLabel: true }, { x: 0, y: 0, fx: x < cx ? 1 : -1, mv: 0, ph: 0 }, 1, false, now + i * 260);
+  drawHuman({ role: p.role === 'oni' ? 'oni' : 'runner', al: true, sk: p.skin, hr: p.hair, hp: 100, noLabel: true }, { x: 0, y: 0, fx: x < cx ? 1 : -1, mv: 0, ph: 0 }, 1, false, now + i * 260);
   c.restore(); ctx = ctx0; TH = th0;
   c.textAlign = 'center'; c.textBaseline = 'middle';
   const fs = clamp(Math.round(s * 5.6), 12, 22);                               // 頭上：名前（ホストは末尾に👑）
@@ -1286,7 +1310,7 @@ function frame(now) {
       if (e.role !== myRole) { const d = Math.hypot(v.x - camV.x, v.y - camV.y); a = clamp((lightR * 0.8 - d) / (lightR * 0.35), 0, 1); if (a <= 0.02) continue; }
       drawHuman(e, v, a, false, now);
     }
-    if (state.me.al || myRole === 'oni') drawHuman({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, id: socket.id, cr: state.me.cr > 0, n: myName, ti: myTitle, sk: mySkin, iv: state.me.iv > 0, wcd: state.me.wcd, bs: state.me.boost, hp: state.me.hp }, meV, 1, true, now);
+    if (state.me.al || myRole === 'oni') drawHuman({ role: myRole, al: true, e: state.me.e, st: state.me.st, inv: state.me.inv, id: socket.id, cr: state.me.cr > 0, n: myName, ti: myTitle, sk: mySkin, hr: myHair, iv: state.me.iv > 0, wcd: state.me.wcd, bs: state.me.boost, hp: state.me.hp }, meV, 1, true, now);
   });
 
   // 暗闇・靄（壁には遮られない）
@@ -1471,7 +1495,7 @@ function updateHud() {
   const it = myRole === 'runner' && s.me.al && s.ph === 'play' && playing ? s.me.item : null;
   if (it && it !== 'stun' && !pad) { ib.style.display = 'block'; ib.textContent = ITEM[it].i + ' ' + ITEM[it].n + '（Q）'; }
   $('tbQ').textContent = it ? ITEM[it].i : 'Q';
-  $('tbSpace').innerHTML = s.me.np >= 0 && s.ph === 'play' ? 'ワープ' : s.ph === 'place' && myRole === 'oni' ? '設置' : myRole === 'oni' ? (s.me.tp > 0 && !s.me.rs ? 'テレポ<br>' + Math.ceil(s.me.tp) : 'テレポ') : (s.me.nc ? '開ける' : 'SPACE');
+  $('tbSpace').innerHTML = s.me.np >= 0 && s.ph === 'play' ? 'ワープ' : s.ph === 'place' && myRole === 'oni' ? '設置' : myRole === 'oni' ? (s.me.rs ? 'テレポ' : '—') : (s.me.nc ? '開ける' : 'SPACE');
   const crOn = myRole === 'runner' && !(world.rules && world.rules.crouch === false);
   $('tbCrouch').style.display = crOn ? 'flex' : 'none';
   $('tbCrouch').innerHTML = s.me.cr > 0 ? '透明<br>' + Math.ceil(s.me.cr) : s.me.crCd > 0 ? 'しゃがみ<br>' + Math.ceil(s.me.crCd) : 'しゃがみ';
@@ -1484,7 +1508,7 @@ function updateHud() {
   else h += '<br>消しゴム：' + (!s.placed ? '未設置' : s.er && s.er.c ? '奪われた！' : '設置中');
   h += '<br>エレベーター：' + (el.open ? '<b style="color:' + (el.left < 3 ? '#f87171' : el.left < 8 ? '#fbbf24' : '#4ade80') + '">OPEN 残り ' + el.left.toFixed(1) + '秒</b>' : '<span style="color:#f87171">CLOSED</span>');
   if (myRole === 'runner') h += '<br>アイテム：' + (s.me.item ? ITEM[s.me.item].i + ' ' + ITEM[s.me.item].n + (s.me.item === 'stun' ? '（自動）' : '') : 'なし');
-  if (myRole === 'oni' && s.ph === 'play') h += '<br>テレポート：' + (s.me.rs || s.me.tp <= 0 ? '<b style="color:#c084fc">SPACEで使用可</b>' : 'あと ' + Math.ceil(s.me.tp) + ' 秒');
+  if (myRole === 'oni' && s.ph === 'play' && s.me.rs) h += '<br>テレポート：<b style="color:#c084fc">SPACEでスポーンへ戻れる</b>';
   if (s.me.boost > 0) h += '<br><span style="color:#fde047">👟 スピードアップ ' + s.me.boost.toFixed(1) + 's</span>';
   if (myRole === 'runner' && !(world.rules && world.rules.leads === false)) h += '<br>✏️ シャー芯 ' + s.me.leads + '本';
   if (s.me.wcd > 0) h += '<br><span style="color:#c084fc">🌀 ワープ待機 ' + s.me.wcd.toFixed(1) + 's</span>';
@@ -1533,7 +1557,8 @@ function renderShop() {
   $('stShop').className = 'btn ' + (shopTab === 'shop' ? 'yellow' : 'gray');
   $('stQuest').className = 'btn ' + (shopTab === 'quest' ? 'yellow' : 'gray');
   $('stTitle').className = 'btn ' + (shopTab === 'title' ? 'yellow' : 'gray');
-  $('shTitle').textContent = shopTab === 'shop' ? '🛒 スキンショップ' : shopTab === 'quest' ? '📜 クエスト' : '🏅 称号';
+  $('stHair').className = 'btn ' + (shopTab === 'hair' ? 'yellow' : 'gray'); $('stEmote').className = 'btn ' + (shopTab === 'emote' ? 'yellow' : 'gray');
+  $('shTitle').textContent = shopTab === 'shop' ? '🛒 スキンショップ' : shopTab === 'hair' ? '💇 髪型ショップ' : shopTab === 'emote' ? '🎭 エモートショップ' : shopTab === 'quest' ? '📜 クエスト' : '🏅 称号';
   updateEG(); setMsg('shopMsg', true, '');
   const body = $('shopBody'); body.innerHTML = ''; shopCards = [];
   if (!profile.name) body.appendChild(mk('div', 'qcard', '⚠ <b>ユーザー名を登録</b>すると、EGが貯まり、スキン購入・実績・称号が使えます（☰メニュー → アカウント）。'));
@@ -1557,6 +1582,8 @@ function renderShop() {
       }
       card.appendChild(foot); row.appendChild(card);
     });
+  } else if (shopTab === 'hair' || shopTab === 'emote') {
+    renderCosmeticTab(body);
   } else if (shopTab === 'quest') {
     const st = wallet.stats || {}, a10 = achOf('leads10'), got = Math.min(st.leads || 0, a10 ? a10.need : 10), need = a10 ? a10.need : 10;
     const q = mk('div', 'qcard', '<h3>✏️ シャー芯集めクエスト</h3><div class="qd">迷路のあちこちに落ちている<b>シャー芯</b>を拾おう（逃げ側）。1本ごとに <b>+' + catalog.ptsLead + 'pt ＋ ' + catalog.egLead + ' EG</b>。累計' + need + '本で実績・称号！</div><div class="qd" style="margin-top:6px">累計 <b>' + got + ' / ' + need + '</b> 本</div>');
@@ -1580,7 +1607,7 @@ function renderShop() {
   }
 }
 function drawShopCards(now) {                              // ショップのカード：人型キャラのプレビュー
-  if (shopTab !== 'shop') return;
+  if (shopTab !== 'shop' && shopTab !== 'hair') return;
   const ctx0 = ctx, th0 = TH;
   for (const sc of shopCards) {
     const c = sc.c.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, 180, 200);
@@ -1589,9 +1616,9 @@ function drawShopCards(now) {                              // ショップのカ
     c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(90, 182, 44, 10, 0, 0, 7); c.fill();
     ctx = c; TH = 0;
     c.save(); c.translate(90, 142); c.scale(3.2, 3.2);
-    drawHuman({ role: 'runner', al: true, sk: sc.i, hp: 100, noLabel: true }, { x: 0, y: 0, fx: 1, mv: 0, ph: 0 }, 1, false, now + sc.i * 300);
+    drawHuman({ role: 'runner', al: true, sk: shopTab === 'hair' ? skinSel : sc.i, hr: shopTab === 'hair' ? sc.i : hairSel, hp: 100, noLabel: true }, { x: 0, y: 0, fx: 1, mv: 0, ph: 0 }, 1, false, now + sc.i * 300);
     c.restore(); ctx = ctx0; TH = th0;
-    if (!ownedSkin(sc.i)) { c.fillStyle = 'rgba(8,6,24,.55)'; c.fillRect(0, 0, 180, 200); c.font = '40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🔒', 90, 100); }
+    if (!(shopTab === 'hair' ? ownedHair(sc.i) : ownedSkin(sc.i))) { c.fillStyle = 'rgba(8,6,24,.55)'; c.fillRect(0, 0, 180, 200); c.font = '40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🔒', 90, 100); }
   }
 }
 
@@ -1741,6 +1768,122 @@ function drawLeads(now) {
 applyProfile();
 refreshSettingsUI();
 requestAnimationFrame(frame);
+</script>
+
+<script>
+// ================= v10 追加機能：髪型・エモート・ロード画面・オンラインマッチ =================
+const HAIRS = [{ n: 'ショート' }, { n: 'ツンツン' }, { n: 'ポニーテール' }, { n: 'アフロ' }, { n: 'ボブ' }, { n: 'モヒカン' }, { n: 'ツインテール' }, { n: 'おだんご' }];
+const EMOTES = [{ n: 'ウェーブ', e: '👋' }, { n: 'ダンス', e: '💃' }, { n: '爆笑', e: '😂' }, { n: 'キラキラ', e: '✨' }, { n: 'ムキムキ', e: '💪' }, { n: 'おやすみ', e: '💤' }];
+const ownedHair = (i) => ((wallet && wallet.hairs) || (catalog && catalog.hairFree) || [0, 1]).includes(i);
+const ownedEmote = (i) => ((wallet && wallet.emotes) || (catalog && catalog.emoteFree) || [0]).includes(i);
+function drawHair(i, col) {                                // 頭の中心は (0,-25)。顔(目)はこの後に描かれる
+  const c = ctx; c.fillStyle = col;
+  const cap = (r) => { c.beginPath(); c.arc(0, -26, r || 9.6, Math.PI * 0.95, Math.PI * 2.05); c.fill(); };
+  if (i === 1) { cap(); [-6, -1.5, 3, 7].forEach((x, k) => { c.beginPath(); c.moveTo(x - 2.4, -32); c.lineTo(x + (k - 1.5) * 0.8, -40 + (k % 2) * 2); c.lineTo(x + 2.4, -32); c.fill(); }); }
+  else if (i === 2) { cap(); c.beginPath(); c.ellipse(-11.5, -21, 3.2, 7, 0.3, 0, 7); c.fill(); }
+  else if (i === 3) { c.beginPath(); c.arc(0, -29, 12.5, Math.PI * 0.88, Math.PI * 2.12); c.fill(); }
+  else if (i === 4) { cap(); c.fillRect(-10, -27, 4, 13); c.fillRect(6, -27, 4, 13); }
+  else if (i === 5) { c.beginPath(); c.arc(0, -26, 9.6, Math.PI * 1.15, Math.PI * 1.85); c.fill(); [-4, 0, 4].forEach((x, k) => { c.beginPath(); c.moveTo(x - 2.2, -33); c.lineTo(x, -43 + (k === 1 ? -3 : 0)); c.lineTo(x + 2.2, -33); c.fill(); }); }
+  else if (i === 6) { cap(); [-1, 1].forEach((sd) => { c.beginPath(); c.arc(sd * 10.5, -27, 3.4, 0, 7); c.fill(); c.beginPath(); c.ellipse(sd * 12, -19, 2.6, 7, sd * -0.15, 0, 7); c.fill(); }); }
+  else if (i === 7) { cap(); c.beginPath(); c.arc(0, -37, 4.8, 0, 7); c.fill(); }
+  else cap();
+}
+function drawEmoteIcon(emo, e) {                           // キャラの頭上に絵文字がポップして浮かぶ
+  const em = EMOTES[emo.i] || EMOTES[0], t = (performance.now() - emo.t0) / 1000, c = ctx;
+  c.save(); c.globalAlpha = Math.max(0, Math.min(1, 2.5 - t) * 1); c.translate(0, -(e.e ? 86 : 74) - t * 7);
+  const sc = 1 + 0.18 * Math.sin(t * 9) + (t < 0.25 ? (0.25 - t) * 2 : 0); c.scale(sc, sc);
+  c.font = '30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(em.e, 0, 0); c.restore();
+}
+function renderCosmeticTab(body) {
+  const hair = shopTab === 'hair', list = hair ? HAIRS : EMOTES, own = hair ? ownedHair : ownedEmote;
+  const price = hair ? (catalog.hairPrice || 30) : (catalog.emotePrice || 40), sel = hair ? hairSel : emoteSel;
+  body.appendChild(mk('div', 'note2', hair ? '髪型は ' + price + ' EG で解放できます。装備した髪型は試合中・ロビーで全員に見えます。' : 'エモートは ' + price + ' EG で解放。試合中に [G] キー／🎭ボタンで、装備中のエモートを表示します。'));
+  const row = mk('div', 'cards'); body.appendChild(row);
+  list.forEach((it, i) => {
+    const has = own(i), eq = sel === i, card = mk('div', 'scard' + (has ? ' own' : '') + (eq ? ' eq' : ''));
+    card.appendChild(mk('div', 'sc-name', it.n));
+    if (hair) { const cvv = document.createElement('canvas'); cvv.width = 180; cvv.height = 200; card.appendChild(cvv); shopCards.push({ c: cvv, i }); }
+    else card.appendChild(mk('div', 'emo-prev', it.e));
+    const foot = mk('div', 'sc-foot');
+    foot.appendChild(mk('div', 'sc-price', '🪙 ' + price + ' EG'));
+    if (has) {
+      foot.appendChild(mk('div', 'badge-own', '✔ 所有済み'));
+      const b = mk('button', 'btn ' + (eq ? 'gray' : 'blue') + ' mini block', eq ? '装備中' : '装備する'); b.disabled = eq;
+      b.onclick = () => equipCosmetic(hair, i); foot.appendChild(b);
+    } else {
+      const can = !!profile.name && wallet.eg >= price;
+      const b = mk('button', 'btn yellow mini block', !profile.name ? '登録が必要' : wallet.eg < price ? 'EGが足りない' : '購入する'); b.disabled = !can;
+      b.onclick = () => socket.emit(hair ? 'buyHair' : 'buyEmote', { id: i }); foot.appendChild(b);
+    }
+    card.appendChild(foot); row.appendChild(card);
+  });
+}
+function equipCosmetic(hair, i) {
+  if (hair) { hairSel = i; try { localStorage.setItem('phair', i); } catch (e) {} socket.emit('setHair', { id: i }); toast('髪型を装備した：' + HAIRS[i].n); }
+  else { emoteSel = i; try { localStorage.setItem('pemote', i); } catch (e) {} socket.emit('setEmote', { id: i }); toast('エモートを装備した：' + EMOTES[i].n); }
+  renderShop();
+}
+$('stHair').onclick = () => { shopTab = 'hair'; renderShop(); };
+$('stEmote').onclick = () => { shopTab = 'emote'; renderShop(); };
+try { hairSel = parseInt(localStorage.getItem('phair'), 10) || 0; emoteSel = parseInt(localStorage.getItem('pemote'), 10) || 0; } catch (e) {}
+if (!ownedHair(hairSel)) hairSel = 0; if (!ownedEmote(emoteSel)) emoteSel = 0;
+function pushEquip() { socket.emit('setHair', { id: hairSel }); socket.emit('setEmote', { id: emoteSel }); }
+function syncEquip() {
+  if (profile && profile.name && wallet && wallet.hairs) { hairSel = wallet.hair | 0; emoteSel = wallet.emote | 0; }
+  else { if (!ownedHair(hairSel)) hairSel = 0; if (!ownedEmote(emoteSel)) emoteSel = 0; pushEquip(); }
+  if (shopOpen && (shopTab === 'hair' || shopTab === 'emote')) renderShop();
+}
+socket.on('connect', pushEquip); socket.on('wallet', syncEquip); socket.on('profile', syncEquip);
+socket.on('init', (w) => { myHair = (w && w.hair) | 0; });
+socket.on('emote', (m) => { if (!m) return; emoteFx[m.id] = { i: m.i | 0, t0: performance.now() }; beep(1040, 0.08, 0.05, 'sine'); });
+const doEmote = () => { if (inGame) socket.emit('emote'); };
+$('emoBtn').onclick = () => { initAudio(); doEmote(); };
+addEventListener('keydown', (e) => { if (e.code === 'KeyG' && !(e.target && e.target.tagName === 'INPUT')) doEmote(); });
+
+// ---------- 走るロード画面（自分のスキンを鬼が追いかける）----------
+let loadOn = false, loadT0 = 0, loadSec = 0, loadKind = '', loadFail = 0;
+function showLoad(kind, sec, n, max) {
+  loadKind = kind; loadSec = sec || 0; loadT0 = performance.now();
+  $('loadTitle').textContent = kind === 'found' ? 'MATCH FOUND!' : kind === 'matching' ? 'MATCHING...' : 'LOADING...';
+  $('loadSub').textContent = kind === 'found' ? (n || 2) + '人でスタート！役割はランダム' : kind === 'matching' ? '全国のプレイヤーを探しています… ' + (n || 1) + ' / ' + (max || 4) + '人' : 'CPU戦の準備中…';
+  $('ldCancel').style.display = kind === 'matching' ? 'inline-block' : 'none';
+  show('load', true);
+  clearTimeout(loadFail); loadFail = setTimeout(hideLoad, (loadSec || 0) * 1000 + 8000);   // 念のための自動解除
+  if (!loadOn) { loadOn = true; requestAnimationFrame(loadFrame); }
+}
+function hideLoad() { clearTimeout(loadFail); show('load', false); }
+function loadFrame(now) {
+  const el = $('load');
+  if (!el || el.style.display !== 'flex') { loadOn = false; return; }
+  requestAnimationFrame(loadFrame);
+  const cvl = $('loadCv'); if (!cvl) return;
+  const W = cvl.width = cvl.clientWidth || innerWidth, H = cvl.height = cvl.clientHeight || innerHeight, c = cvl.getContext('2d'); if (!c) return;
+  const t = (now - loadT0) / 1000, gy = H * 0.8, u = Math.max(0.8, Math.min(W, H) / 300);
+  c.fillStyle = '#fff'; [[0.15, 0.1, 1], [0.5, 0.2, 1.4], [0.8, 0.12, 1.1]].forEach(([a, b, sp], i) => {
+    const x = (((a * W - t * 40 * sp) % (W + 240)) + W + 240) % (W + 240) - 120, y = H * b + 50; c.beginPath(); c.arc(x, y, 30 * u / 2, 0, 7); c.arc(x + 30, y - 8, 38 * u / 2, 0, 7); c.arc(x + 62, y, 28 * u / 2, 0, 7); c.fill();
+  });
+  c.fillStyle = '#6fcf5a'; c.fillRect(0, gy, W, H - gy); c.fillStyle = '#4aa83a'; c.fillRect(0, gy, W, 10);
+  c.fillStyle = '#c9964f'; for (let i = -1; i < W / 70 + 2; i++) c.fillRect(i * 70 - (t * 520) % 70, gy + 34, 34, 8);
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 3; for (let i = 0; i < 6; i++) { const y = gy - 20 - i * 30 * u / 2, x = ((i * 170 - t * 900) % (W + 200) + W + 200) % (W + 200) - 100; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 70, y); c.stroke(); }
+  const sc = 3.2 * u / 1.6, px = W * 0.58 + Math.sin(t * 2) * 10, ph = t * 15;
+  const c0 = ctx, th0 = TH; ctx = c; TH = 0;
+  try {
+    c.save(); c.translate(px - 105 * sc / 2.4 + Math.sin(t * 3) * 14, gy + 4); c.scale(sc * 1.2, sc * 1.2);
+    drawHuman({ role: 'oni', al: true, sk: 0, hp: 100, noLabel: true }, { x: 0, y: -Math.abs(Math.sin(ph + 1)) * 2.5 - 12, fx: 1, mv: 1, ph: ph + 1 }, 1, false, now); c.restore();   // 後ろから追う鬼
+    c.save(); c.translate(px, gy + 4); c.scale(sc, sc);
+    drawHuman({ role: 'runner', al: true, sk: skinSel, hr: hairSel, hp: 100, noLabel: true }, { x: 0, y: -Math.abs(Math.sin(ph)) * 3 - 12, fx: 1, mv: 1, ph }, 1, false, now); c.restore();   // 必死に走る自分
+  } catch (er) {}
+  ctx = c0; TH = th0;
+  c.font = 'bold ' + 22 * u / 1.6 + 'px sans-serif'; c.fillStyle = '#e11d48'; c.textAlign = 'center'; c.fillText('ひぃぃっ！', px + 10, gy - 150 * sc / 3.2 * 1.05 + Math.sin(t * 20) * 3);
+  const f = $('ldFill'); if (f) f.style.width = (loadKind === 'matching' || !loadSec ? ((t * 40) % 100) : Math.min(100, t / loadSec * 100)) + '%';
+}
+socket.on('loading', (m) => { if (m) showLoad(m.kind === 'found' ? 'found' : 'solo', m.sec, m.n); });
+socket.on('matching', (m) => { if (m && (loadKind === 'matching' || $('load').style.display === 'flex')) { if (loadKind === 'matching') { $('loadSub').textContent = '全国のプレイヤーを探しています… ' + m.n + ' / ' + m.max + '人'; } } });
+socket.on('matchCancel', hideLoad);
+socket.on('errmsg', hideLoad);
+socket.on('init', hideLoad);
+$('ldCancel').onclick = () => { socket.emit('cancelMatch'); hideLoad(); };
+$('btnQuick').onclick = () => { initAudio(); $('err').textContent = ''; socket.emit('quickMatch', { name: nm(), skin: skinSel }); showLoad('matching', 0, 1, 4); };
 </script>
 </body>
 </html>
