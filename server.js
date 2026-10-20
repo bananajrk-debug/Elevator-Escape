@@ -31,10 +31,10 @@ const INVULN = 3, START_STUN = 2, ONI_RESPAWN = 5;
 const PLACE_MIN = 300, HINT_AFTER = 45;
 const WARP_CD = 5, WARP_ACT_R = 38;
 const BOOST_SEC = 10, BOOST_MUL = 1.4;
-const GRENADE_STUN = 8, GRENADE_R = 240;
+const GRENADE_STUN = 5, GRENADE_R = 240;
 const CHEST_RESPAWN = 45, POTION_RESPAWN = 40, POTION_COUNT = 3;
 const ONI_TP_CD = 30;
-const KB_BLOCKS = 17, KB_SPEED = 1700;
+const KB_BLOCKS = 17, KB_BOARD_BLOCKS = 8, KB_SPEED = 1700;   // 通常17マス／エレベーター突入者への命中時は8マス
 const CROUCH_SEC = 2, CROUCH_CD = 10, CROUCH_MUL = 0.5;   // しゃがみ：2秒透明・CT10秒
 const SKIN_COUNT = 8, MAX_PLAYERS = 8;
 const COUNT_SEC = TEST ? 0.4 : 3.8;                       // 3, 2, 1, START!
@@ -42,13 +42,15 @@ const ROUND_GAP = TEST ? 1200 : 5000, MATCH_END_WAIT = 25000;   // 階のリザ�
 const TRANS_MS = TEST ? 500 : 4000;                       // 次の階へ進むエレベーター演出（約4秒）
 const LOAD_SEC = TEST ? 0.2 : 1.6, FOUND_SEC = TEST ? 0.2 : 2.0;   // ロード画面の長さ（CPU戦／マッチング成立後）
 const QUICK_MAX = 4, QUICK_WAIT = TEST ? 150 : 3000;     // オンラインマッチ：最大4人・成立後の待ち時間
-const RUNNER_SIDE = 2, ONI_SIDE = 0;                      // 逃げ側は全員同じ位置(下)、鬼は反対側(上)から開始
+// スポーン：鬼はランダムな1つのエレベーター、逃げ側は残り3つのうちランダムな1か所にまとまって開始（毎階抽選）
 const RUNNER_STUN = 1.2;                                  // 逃げ側も被弾すると硬直
 const LEAD_CHANCE = 0.6;                                  // シャー芯はCPU戦のみ、確率で出現
 // マルチステージ／サドンデス（偶数階）
 const SD_TIME_MUL = 0.5, SD_ONI_MUL = 1.2, SD_RESP = 3;
 // ポイント・EG
 const SKIN_PRICE = 50, FREE_SKINS = [0, 1, 2];
+const HAIR_COUNT = 8, HAIR_PRICE = 30, FREE_HAIRS = [0, 1];        // 髪型
+const EMOTE_COUNT = 6, EMOTE_PRICE = 40, FREE_EMOTES = [0];        // エモート
 const PTS_LEAD = 100, EG_LEAD = 2, PTS_HIT = 30, PTS_ESCAPE = 100, PTS_ESCAPE_TEAM = 40, PTS_NODMG = 50, PTS_WIPE = 100, PTS_TIMEUP = 60;
 const EG_FLOOR_WIN = 5, EG_MATCH_WIN = 10, EG_PARTICIPATE = 3, EG_CPU_WIN = 15;
 const LEAD_MAX = 5, LEAD_START = 3, LEAD_INTERVAL = 10;   // シャー芯
@@ -204,7 +206,8 @@ let saveTimer = null;
 const sha = (v) => crypto.createHash('sha256').update(String(v)).digest('hex');
 function normAcc(a) {
   a.friends = a.friends || []; a.reqIn = a.reqIn || []; a.reqOut = a.reqOut || []; a.devices = a.devices || [];
-  a.eg = a.eg || 0; a.owned = a.owned || FREE_SKINS.slice(); a.ach = a.ach || []; a.title = a.title || null;
+  a.eg = a.eg || 0; a.owned = a.owned || FREE_SKINS.slice();
+  a.hairs = a.hairs || FREE_HAIRS.slice(); a.emotes = a.emotes || FREE_EMOTES.slice(); a.hair = a.hair | 0; a.emote = a.emote | 0; a.ach = a.ach || []; a.title = a.title || null;
   a.stats = Object.assign({ leads: 0, escapes: 0, wipes: 0, cpuWins: 0, matches: 0, purchases: 0, hits: 0, kills: 0, warps: 0, crouches: 0, potions: 0 }, a.stats);
   delete a.passHash; delete a.salt;                       // 旧フレンドパスワードは廃止
   return a;
@@ -242,7 +245,13 @@ const cleanDevice = (d) => { d = String(d || ''); return /^[A-Za-z0-9\-]{8,64}$/
 const accOf = (socketId) => sockAcc.get(socketId) || null;
 const accName = (socketId) => { const a = accOf(socketId); return a ? a.name : null; };
 const titleOf = (socketId) => { const a = accOf(socketId); return a && a.title && ACH[a.title] ? ACH[a.title].t : null; };
-const walletOf = (a) => ({ eg: a.eg, owned: a.owned, ach: a.ach, title: a.title, stats: a.stats });
+const walletOf = (a) => ({ eg: a.eg, owned: a.owned, ach: a.ach, title: a.title, stats: a.stats, hairs: a.hairs, emotes: a.emotes, hair: a.hair, emote: a.emote });
+const sockEquip = new Map();                              // ログインしていない人の髪型・エモート（無料のものだけ）
+function equipOf(socketId) {
+  const a = accOf(socketId);
+  if (a) return { hair: a.hairs.includes(a.hair) ? a.hair : 0, emote: a.emotes.includes(a.emote) ? a.emote : 0 };
+  return sockEquip.get(socketId) || { hair: 0, emote: 0 };
+}
 function socksOf(acc) { return online.get(acc.id) || new Set(); }
 function emitWallet(acc) { for (const sid of socksOf(acc)) io.to(sid).emit('wallet', walletOf(acc)); }
 function canUseSkin(socketId, skin) { const a = accOf(socketId); return a ? a.owned.includes(skin) : FREE_SKINS.includes(skin); }
@@ -315,7 +324,7 @@ function newCode() {
 }
 function cleanName(n) { return String(n || '').trim().slice(0, 12) || 'プレイヤー'; }
 function sendLobby(room) {
-  const players = [...room.players.values()].map((p) => ({ id: p.id, name: p.name, role: p.role, skin: p.skin, ready: p.id === room.host || !!p.ready, title: titleOf(p.id) }));
+  const players = [...room.players.values()].map((p) => ({ id: p.id, name: p.name, role: p.role, skin: p.skin, hair: p.hair | 0, ready: p.id === room.host || !!p.ready, title: titleOf(p.id) }));
   for (const id of room.players.keys()) io.to(id).emit('lobby', { code: room.code, state: room.state, host: room.host, players, you: id, rules: room.rules });
 }
 function toLobby(room) {
@@ -332,7 +341,8 @@ function makeRoom(socket, solo) {
   return room;
 }
 function addPlayer(room, socket, name, role, skin) {
-  room.players.set(socket.id, { id: socket.id, name: cleanName(name), role, skin: safeSkin(socket.id, skin), ready: false });
+  const eq = equipOf(socket.id);
+  room.players.set(socket.id, { id: socket.id, name: cleanName(name), role, skin: safeSkin(socket.id, skin), hair: eq.hair, emote: eq.emote, ready: false });
   sockRoom.set(socket.id, room);
   touchPresence(socket.id);
 }
@@ -350,7 +360,7 @@ function leaveRoomInner(id) {
       if (g.board && g.board.id === id) g.board = null;
       if (ent.hasEraser) dropEraser(g, ent);
       g.ents = g.ents.filter((e) => e !== ent);
-      if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu' + Date.now(), 'CPU鬼', 'oni', true, ONI_SIDE, 0);
+      if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu' + Date.now(), 'CPU鬼', 'oni', true, g.oniSide === undefined ? 0 : g.oniSide, 0);
     }
   }
   if (room.players.size === 0) { rooms.delete(room.code); return; }
@@ -359,14 +369,14 @@ function leaveRoomInner(id) {
 }
 
 // ================= マッチ（階層）=================
-function addEnt(g, id, name, role, cpu, side, skin, title) {
+function addEnt(g, id, name, role, cpu, side, skin, title, hair) {
   const E = ELEVS[side];
   const k = g.ents.filter((e) => e.role === role).length;          // 同じ側の人数分だけ、固定の配置スロットを順に使う
   const lat = [0, 20, -20][k % 3], dep = [0, 20, -20][Math.floor(k / 3) % 3];
   const px = E.dy !== 0 ? 1 : 0, py = E.dx !== 0 ? 1 : 0;
   const x = (E.tx + E.dx) * T + T / 2 + px * lat + E.dx * dep, y = (E.ty + E.dy) * T + T / 2 + py * lat + E.dy * dep;
   g.ents.push({
-    id, name, role, cpu, side, skin: skin || 0, title: title || null, x, y, spawn: { x, y },
+    id, name, role, cpu, side, skin: skin || 0, hair: hair | 0, title: title || null, x, y, spawn: { x, y },
     input: { u: 0, d: 0, l: 0, r: 0 }, alive: true, hp: MAX_HP, hasEraser: false, board: false,
     invuln: 0, stun: 0, resp: false, tpCd: ONI_TP_CD, item: null, boost: 0, wcd: 0, msgCd: 0, crouch: 0, crouchCd: 0, kb: null,
     wp: null, wpT: 0, idle: 0, vx: 0, vy: 0, path: null, repath: 0, pts: 0, dmg: 0, leads: 0
@@ -421,15 +431,17 @@ function startRound(room, floor) {
   if (g.leadsOn) for (let i = 0; i < LEAD_START; i++) if (Math.random() < LEAD_CHANCE) spawnLead(g);
   const roles = rolesFor(room, floor);
   const ids = [...roles.keys()];
-  for (const id of ids) if (roles.get(id) === 'runner') { const p = room.players.get(id); addEnt(g, id, p.name, 'runner', false, RUNNER_SIDE, p.skin, titleOf(id)); }
-  for (const id of ids) if (roles.get(id) === 'oni') { const p = room.players.get(id); addEnt(g, id, p.name, 'oni', false, ONI_SIDE, p.skin, titleOf(id)); }
-  if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu1', 'CPU鬼', 'oni', true, ONI_SIDE, 0, null);
+  const oniSide = Math.floor(Math.random() * 4), others = [0, 1, 2, 3].filter((v) => v !== oniSide), runSide = others[Math.floor(Math.random() * others.length)];
+  g.oniSide = oniSide; g.runSide = runSide;
+  for (const id of ids) if (roles.get(id) === 'runner') { const p = room.players.get(id); addEnt(g, id, p.name, 'runner', false, runSide, p.skin, titleOf(id), p.hair); }
+  for (const id of ids) if (roles.get(id) === 'oni') { const p = room.players.get(id); addEnt(g, id, p.name, 'oni', false, oniSide, p.skin, titleOf(id), p.hair); }
+  if (!g.ents.some((e) => e.role === 'oni')) addEnt(g, 'cpu1', 'CPU鬼', 'oni', true, oniSide, 0, null, 0);
   m.floor = floor;
   room.game = g; room.state = 'playing';
   for (const e of g.ents) if (!e.cpu) {
     io.to(e.id).emit('init', {
       grid: g.grid.map((r) => r.join('')), T, N, map: MAP, elevs: ELEVS, cfg: CFG, role: e.role, side: e.side, name: e.name,
-      skin: e.skin, title: e.title, matchTime: g.time, placeTime: rules.placeTime, rules, warpCd: WARP_CD, tpCd: ONI_TP_CD, boardTime: BOARD_TIME,
+      skin: e.skin, hair: e.hair | 0, title: e.title, matchTime: g.time, placeTime: rules.placeTime, rules, warpCd: WARP_CD, tpCd: ONI_TP_CD, boardTime: BOARD_TIME,
       solo: room.solo, floor, total: m.total, sudden, count: g.countLeft,
       pads: g.pads, chests: g.chests.map((c) => ({ x: c.x, y: c.y })), potions: g.potions.map((p) => ({ x: p.x, y: p.y }))
     });
@@ -535,13 +547,14 @@ function updateElevator(g, dt) {
   if (target > el.door) el.door = Math.min(target, el.door + dt * 1.2);
   else el.door = Math.max(target, el.door - dt * (el.open ? 2 : 3));
 }
-function startKnockback(g, o, from) {                      // 鬼が命中すると自身が17ブロック先まで弾き飛ばされる
+function startKnockback(g, o, from, blocks) {              // 鬼が命中すると自身が17ブロック（突入者への命中は8ブロック）先まで弾き飛ばされる
+  blocks = blocks || KB_BLOCKS;
   const sx = Math.floor(o.x / T), sy = Math.floor(o.y / T);
   const dist = new Int16Array(N * N).fill(-1), par = new Int16Array(N * N).fill(-1), q = [sy * N + sx];
   dist[q[0]] = 0; let maxD = 0;
   for (let h = 0; h < q.length; h++) {
     const c = q[h], cx = c % N, cy = (c / N) | 0;
-    if (dist[c] >= KB_BLOCKS) continue;
+    if (dist[c] >= blocks) continue;
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = cx + dx, ny = cy + dy;
       if (isSolid(g, nx, ny, o)) continue;
@@ -550,7 +563,7 @@ function startKnockback(g, o, from) {                      // 鬼が命中する
       dist[ni] = dist[c] + 1; par[ni] = c; maxD = Math.max(maxD, dist[ni]); q.push(ni);
     }
   }
-  const D = Math.min(KB_BLOCKS, maxD);
+  const D = Math.min(blocks, maxD);
   if (D <= 0) return;
   let best = -1, bd = -1;
   for (const c of q) {
@@ -576,7 +589,7 @@ function hurtRunner(g, r, oni) {
   r.invuln = INVULN; r.dmg++; r.stun = RUNNER_STUN; r.vx = 0; r.vy = 0;
   if (r.hasEraser) dropEraser(g, r);
   fxNear(g, 'hit', r.x, r.y);
-  if (oni) { oni.pts += PTS_HIT; startKnockback(g, oni, r); oni.stun = g.respSec; oni.resp = true; if (!oni.cpu) bumpStat(oni.id, 'hits', 1); }
+  if (oni) { oni.pts += PTS_HIT; startKnockback(g, oni, r, (r.board || (g.board && g.board.id === r.id)) ? KB_BOARD_BLOCKS : KB_BLOCKS); oni.stun = g.respSec; oni.resp = true; if (!oni.cpu) bumpStat(oni.id, 'hits', 1); }
   if (r.hp <= 0) { r.alive = false; if (oni && !oni.cpu) bumpStat(oni.id, 'kills', 1); ev(g, '☠ ' + r.name + ' が力尽きた'); }
   else ev(g, '💥 ' + r.name + ' がやられた！HP ' + r.hp + '%');
 }
@@ -707,7 +720,7 @@ function step(g, dt) {
     r.item = null;
     for (const o of g.ents) if (o.role === 'oni' && Math.hypot(o.x - r.x, o.y - r.y) < GRENADE_R) { o.stun = Math.max(o.stun, GRENADE_STUN); o.resp = false; }
     fxNear(g, 'stun', r.x, r.y);
-    ev(g, '💫 スタングレネード自動発動！鬼が8秒間停止');
+    ev(g, '💫 スタングレネード自動発動！鬼が' + GRENADE_STUN + '秒間停止');
   }
 
   for (const c of g.chests) if (c.open) { c.respawn -= dt; if (c.respawn <= 0) c.open = false; }
@@ -893,12 +906,9 @@ function doAction(g, e) {                                   // SPACE：ワープ
     return;
   }
   if (e.role === 'oni') {
-    const respawning = e.stun > 0 && e.resp;
-    if (e.stun > 0 && !e.resp) { evTo(e.id, '❌ 今はテレポートできない'); return; }
-    if (!respawning && e.tpCd > 0) { evTo(e.id, '⏳ テレポートはあと ' + Math.ceil(e.tpCd) + ' 秒'); return; }
+    if (!(e.stun > 0 && e.resp)) return;                   // 何もない場所でのテレポートは不可：やられた直後のリスポーン硬直中だけスポーンへ戻れる
     fxNear(g, 'warp', e.x, e.y);
-    e.x = e.spawn.x; e.y = e.spawn.y; e.path = null;
-    if (respawning) e.resp = false; else e.tpCd = ONI_TP_CD;
+    e.x = e.spawn.x; e.y = e.spawn.y; e.path = null; e.resp = false;
     fxNear(g, 'warp', e.x, e.y);
     evTo(e.id, '🌀 スポーン位置へテレポート');
     return;
@@ -933,7 +943,7 @@ function snapshot(g, r) {
   const ents = [];
   for (const e of g.ents) {
     if (e === r) continue;
-    const info = { id: e.id, n: e.name, ti: e.title, x: e.x, y: e.y, role: e.role, al: e.alive, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, sk: e.skin, iv: hidden(e), cr: e.crouch > 0, hp: e.hp };
+    const info = { id: e.id, n: e.name, ti: e.title, x: e.x, y: e.y, role: e.role, al: e.alive, e: e.hasEraser, st: e.stun > 0, inv: e.invuln > 0, sd: e.side, sk: e.skin, hr: e.hair | 0, iv: hidden(e), cr: e.crouch > 0, hp: e.hp };
     if (e.role === r.role) ents.push(info);
     else if (e.alive && !hidden(e) && Math.hypot(e.x - ref.x, e.y - ref.y) < ghost) ents.push(info);   // しゃがみ中は鬼に完全に見えない
   }
@@ -1033,7 +1043,7 @@ function formMatch() {
 io.on('connection', (socket) => {
   socket.emit('catalog', {
     ach: Object.keys(ACH).map((id) => ({ id, n: ACH[id].n, d: ACH[id].d, eg: ACH[id].eg, t: ACH[id].t, need: ACH[id].need || 0, stat: ACH[id].stat || null, cat: ACH[id].cat })),
-    price: SKIN_PRICE, free: FREE_SKINS, egCpu: EG_CPU_WIN, egLead: EG_LEAD, ptsLead: PTS_LEAD
+    price: SKIN_PRICE, free: FREE_SKINS, hairPrice: HAIR_PRICE, hairFree: FREE_HAIRS, hairCount: HAIR_COUNT, emotePrice: EMOTE_PRICE, emoteFree: FREE_EMOTES, emoteCount: EMOTE_COUNT, egCpu: EG_CPU_WIN, egLead: EG_LEAD, ptsLead: PTS_LEAD
   });
   const reply = (evn, ok, msg) => socket.emit(evn, { ok, msg });
   const nameNow = (d) => accName(socket.id) || (d && d.name);
@@ -1174,6 +1184,38 @@ io.on('connection', (socket) => {
     socket.emit('bought', { id });
     reply('shopMsg', true, 'スキンを購入した！');
   });
+  const buyCosmetic = (d, key, list, count, price, label) => {
+    const acc = accOf(socket.id), id = parseInt(d && d.id, 10);
+    if (!acc) return reply('shopMsg', false, 'ユーザー名を登録するとEGを貯めて購入できます');
+    if (!(id >= 0 && id < count)) return reply('shopMsg', false, 'そのアイテムはありません');
+    if (acc[list].includes(id)) return reply('shopMsg', false, 'すでに所有しています');
+    if (acc.eg < price) return reply('shopMsg', false, 'EGが足りません（' + price + ' EG 必要）');
+    acc.eg -= price; acc[list].push(id); acc.stats.purchases++; acc[key] = id; saveAccounts();
+    emitWallet(acc); grantAch(socket.id, 'shopper'); socket.emit('bought', { id });
+    const room = sockRoom.get(socket.id), p = room && room.players.get(socket.id);
+    if (p && room.state === 'lobby') { p[key] = id; sendLobby(room); }
+    reply('shopMsg', true, label + 'を購入して装備した！');
+  };
+  socket.on('buyHair', (d) => buyCosmetic(d, 'hair', 'hairs', HAIR_COUNT, HAIR_PRICE, '髪型'));
+  socket.on('buyEmote', (d) => buyCosmetic(d, 'emote', 'emotes', EMOTE_COUNT, EMOTE_PRICE, 'エモート'));
+  const equipCosmetic = (d, key, list, free, count) => {
+    const acc = accOf(socket.id), id = parseInt(d && d.id, 10);
+    if (!(id >= 0 && id < count)) return;
+    if (acc) { if (!acc[list].includes(id)) return; acc[key] = id; saveAccounts(); emitWallet(acc); }
+    else { if (!free.includes(id)) return; const q = sockEquip.get(socket.id) || { hair: 0, emote: 0 }; q[key] = id; sockEquip.set(socket.id, q); }
+    const room = sockRoom.get(socket.id), p = room && room.players.get(socket.id);
+    if (p && room.state === 'lobby') { p[key] = id; sendLobby(room); }
+  };
+  socket.on('setHair', (d) => equipCosmetic(d, 'hair', 'hairs', FREE_HAIRS, HAIR_COUNT));
+  socket.on('setEmote', (d) => equipCosmetic(d, 'emote', 'emotes', FREE_EMOTES, EMOTE_COUNT));
+  let lastEmote = 0;
+  socket.on('emote', () => {                                // 装備中のエモートを全員に表示（連打防止 1.5秒）
+    const room = sockRoom.get(socket.id);
+    if (!room || Date.now() - lastEmote < 1500) return;
+    lastEmote = Date.now();
+    const i = equipOf(socket.id).emote;
+    for (const pid of room.players.keys()) io.to(pid).emit('emote', { id: socket.id, i });
+  });
   socket.on('setTitle', (d) => {
     const acc = accOf(socket.id), id = d && d.id;
     if (!acc) return;
@@ -1265,7 +1307,7 @@ io.on('connection', (socket) => {
     for (const id of room.players.keys()) io.to(id).emit('chat', { id: socket.id, i });
   });
   socket.on('leave', () => leaveRoom(socket.id));
-  socket.on('disconnect', () => { leaveQueue(socket.id); leaveRoom(socket.id); detach(socket); });
+  socket.on('disconnect', () => { sockEquip.delete(socket.id); leaveQueue(socket.id); leaveRoom(socket.id); detach(socket); });
 });
 
 const PORT = process.env.PORT || 3000;
