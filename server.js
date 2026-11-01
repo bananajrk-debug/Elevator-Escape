@@ -10,10 +10,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Googleなどの検索ロボットのアクセスを全面的に許可する設定
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain');
-  res.send("User-agent: *\nAllow: /");
+  res.send(`User-agent: *
+Allow: /`);
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
