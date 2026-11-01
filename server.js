@@ -9,12 +9,14 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-app.use(express.static(path.join(__dirname, 'public')));
+
 // Googleなどの検索ロボットのアクセスを全面的に許可する設定
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain');
   res.send("User-agent: *\nAllow: /");
 });
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ================= 定数 =================
 const TEST = process.env.EG_TEST === '1';                 // 自動テスト用：時間を短縮（本番では未設定）
